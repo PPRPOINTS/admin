@@ -288,53 +288,52 @@ tr:last-child td{border-bottom:none}
 "use strict";
 
 /* ---------- config ---------- */
-var CFG = {
-  ordersSheet: "Customer_Orders",
-  productsSheet: "Products",
-  contactsSheet: "Contacts"
+var CFG = { ordersSheet:"Customer_Orders", productsSheet:"Products", contactsSheet:"Contacts" };
+
+/* Exact columns, locked to the sheet. No header guessing.
+   F is deliberately missing: the sheet fills it with a formula off E. */
+var FIELDS = [
+  {k:"orderDate", c:0,  lbl:"Date"},
+  {k:"source",    c:1,  lbl:"Source"},
+  {k:"customer",  c:2,  lbl:"Customer"},
+  {k:"mobile",    c:3,  lbl:"Mobile"},
+  {k:"sku",       c:4,  lbl:"Product"},
+  {k:"qty",       c:6,  lbl:"Qty"},
+  {k:"payStatus", c:15, lbl:"Payment status"},
+  {k:"payMethod", c:16, lbl:"Paid by"},
+  {k:"funds",     c:17, lbl:"Funds holder"},
+  {k:"fulfil",    c:18, lbl:"Fulfilment"},
+  {k:"packed",    c:19, lbl:"Packed"},
+  {k:"stockUp",   c:20, lbl:"Stock updated"},
+  {k:"payHit",    c:21, lbl:"Payment hit"},
+  {k:"freeVial",  c:22, lbl:"Free vial"},
+  {k:"credit",    c:23, lbl:"Credit used"},
+  {k:"notes",     c:24, lbl:"Notes"}
+];
+var COL = {}; FIELDS.forEach(function(f){ COL[f.k] = f.c; });
+
+/* Only for reading history back. The payload has columns stripped out of it,
+   so these get found by header name, not by position. */
+var READ_H = {
+  customer: ["Customer Name","Customer","Name"],
+  source:   ["Source","Lead Source"]
 };
 
-/* field -> possible header names -> fallback column index (0 = A) */
-var FIELDS = [
-  {k:"orderDate", h:["Order Date","Date"],                                  c:0,  lbl:"Date"},
-  {k:"source",    h:["Source","Lead Source","Where From"],                  c:1,  lbl:"Source"},
-  {k:"customer",  h:["Customer Name","Customer","Name"],                    c:2,  lbl:"Customer"},
-  {k:"mobile",    h:["Mobile","Phone Number","Phone","Phone & Email"],       c:3,  lbl:"Mobile"},
-  {k:"sku",       h:["SKU","Product SKU"],                                  c:4,  lbl:"SKU"},
-  {k:"product",   h:["Product Name","Product"],                             c:5,  lbl:"Product"},
-  {k:"qty",       h:["Qty","Quantity","Qty Ordered"],                       c:6,  lbl:"Qty"},
-  {k:"unitPrice", h:["Unit Price","Unit Price ex GST (AUD)"],               c:7,  lbl:"Unit price"},
-  {k:"payStatus", h:["Payment Status"],                                     c:15, lbl:"Payment status"},
-  {k:"payMethod", h:["Payment Method"],                                     c:16, lbl:"Paid by"},
-  {k:"funds",     h:["Funds Holder","Where Funds Live","Funds"],            c:17, lbl:"Funds holder"},
-  {k:"fulfil",    h:["Fulfilment Status","Fulfillment Status"],             c:18, lbl:"Fulfilment"},
-  {k:"packed",    h:["Packed and ready?","Packed?","Packed"],               c:19, lbl:"Packed"},
-  {k:"stockUp",   h:["Stock Updated","Stock Updated?","Stock Adjusted"],    c:20, lbl:"Stock updated"},
-  {k:"payHit",    h:["Payment Hit","Payment Account Hit","Payment Received?","Funds Received"], c:21, lbl:"Payment hit"},
-  {k:"freeVial",  h:["Free Vial?","Free Vial"],                             c:22, lbl:"Free vial"},
-  {k:"credit",    h:["Credit Used ($)","Credit Used","Credit"],              c:23, lbl:"Credit used"},
-  {k:"notes",     h:["Notes","Note","Comments"],                            c:24, lbl:"Notes"}
-];
-
-/* used only if the sheet has no data validation and no history */
+/* used only when the sheet has no dropdown set on that column */
 var FALLBACK = {
   source:    ["Instagram","Facebook","Referral","Word of Mouth","Repeat Customer","Website","Other"],
   payStatus: ["Unpaid","Part Paid","Paid"],
   payMethod: ["Bank Transfer","Cash","PayPal","Card","Crypto"],
   funds:     ["Bank","PayPal","Cash","Max","Bon","Jord"],
   fulfil:    ["Pending","Packed","Sent","Delivered","Cancelled"],
-  packed:    ["No","Yes"],
-  stockUp:   ["No","Yes"],
-  payHit:    ["No","Yes"],
-  freeVial:  ["No","Yes"]
+  packed:    ["No","Yes"], stockUp:["No","Yes"], payHit:["No","Yes"], freeVial:["No","Yes"]
 };
-
 var DEFAULTS = {payStatus:"Unpaid",fulfil:"Pending",packed:"No",stockUp:"No",payHit:"No",freeVial:"No"};
 
 /* ---------- state ---------- */
-var KEY = "", URL_ = "";
-var DATA = null, COLS = {}, WCOL = {}, OPTS = {}, PRODUCTS = [], CUSTOMERS = [], LINES = [];
-var lineSeq = 0, busy = false;
+var KEY="", URL_="";
+var DATA=null, RCOL={}, OPTS={}, PRODUCTS=[], CUSTOMERS=[], LINES=[];
+var lineSeq=0, busy=false;
 
 /* ---------- helpers ---------- */
 function $(id){return document.getElementById(id);}
@@ -342,24 +341,31 @@ function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"
 function num(s){if(s==null||s==="")return 0;var v=String(s).replace(/[$,\s%]/g,"").replace(/[\u2212\u2013]/g,"-");var n=parseFloat(v);return isNaN(n)?0:n;}
 function money(n){if(n==null||isNaN(n))return "$0.00";return "$"+Number(n).toLocaleString("en-AU",{minimumFractionDigits:2,maximumFractionDigits:2});}
 function today(){var d=new Date();return String(d.getDate()).padStart(2,"0")+"/"+String(d.getMonth()+1).padStart(2,"0")+"/"+d.getFullYear();}
-function uniq(a){var s=[],seen={};for(var i=0;i<a.length;i++){var v=String(a[i]==null?"":a[i]).trim();if(!v||seen[v.toLowerCase()])continue;seen[v.toLowerCase()]=1;s.push(v);}return s;}
+function uniq(a){var o=[],seen={};for(var i=0;i<a.length;i++){var v=String(a[i]==null?"":a[i]).trim();if(!v||seen[v.toLowerCase()])continue;seen[v.toLowerCase()]=1;o.push(v);}return o;}
 function colLetter(i){var s="";i=i+1;while(i>0){var m=(i-1)%26;s=String.fromCharCode(65+m)+s;i=Math.floor((i-m)/26);}return s;}
+function lsGet(k){try{return localStorage.getItem(k);}catch(e){return null;}}
+function lsSet(k,v){try{localStorage.setItem(k,v);return true;}catch(e){return false;}}
 
 var toastT=null;
 function toast(msg,kind){
-  var t=$("toast");t.textContent=msg;t.className="toast show "+(kind||"");
-  clearTimeout(toastT);toastT=setTimeout(function(){t.className="toast";},kind==="bad"?7000:3800);
+  var t=$("toast"); t.textContent=msg; t.className="toast show "+(kind||"");
+  clearTimeout(toastT); toastT=setTimeout(function(){t.className="toast";}, kind==="bad"?7000:3800);
+}
+
+/* Strips a "(Referral ...)" tail no matter how deeply it nests, so
+   "Emily Wonka (Referral Katie Wonka (Referral Monique))" gives "Emily Wonka" */
+function baseName(full){
+  var s=String(full||"").trim();
+  var i=s.search(/\s*\(Referral\b/i);
+  if(i>=0) return s.slice(0,i).trim();
+  i=s.search(/\s+via\s+/i);                 // a few older rows used "via"
+  return i<0 ? s : s.slice(0,i).trim();
 }
 
 /* ---------- unlock ---------- */
-function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
-function lsSet(k,v){ try{ localStorage.setItem(k,v); return true; }catch(e){ return false; } }
-
 (function initLock(){
-  /* The dashboard saves its connection under these keys. Same site, same storage,
-     so if you are already connected over there this page just works. */
-  var savedUrl = lsGet("peps-script-url") || sessionStorage.getItem("oe-url") || "";
-  var savedKey = lsGet("peps-script-key") || sessionStorage.getItem("oe-key") || "";
+  var savedUrl = lsGet("peps-script-url") || "";
+  var savedKey = lsGet("peps-script-key") || "";
   $("uIn").value = savedUrl;
   if(savedKey && savedUrl){ KEY=savedKey; URL_=savedUrl; start(); }
   $("unlockBtn").addEventListener("click", doUnlock);
@@ -368,21 +374,17 @@ function lsSet(k,v){ try{ localStorage.setItem(k,v); return true; }catch(e){ ret
 })();
 
 function doUnlock(){
-  var k = $("kIn").value.trim(), u = $("uIn").value.trim();
-  if(!k || !u){ showLockErr("Key and script URL are both needed."); return; }
-  if(u.indexOf("https://script.google.com/") !== 0){ showLockErr("That doesn't look like an Apps Script URL."); return; }
+  var k=$("kIn").value.trim(), u=$("uIn").value.trim();
+  if(!k||!u){ showLockErr("Key and script URL are both needed."); return; }
+  if(u.indexOf("https://script.google.com/")!==0){ showLockErr("That does not look like an Apps Script URL."); return; }
   KEY=k; URL_=u;
-  sessionStorage.setItem("oe-key",k);
-  sessionStorage.setItem("oe-url",u);
-  lsSet("peps-script-url",u);
-  lsSet("peps-script-key",k);
+  lsSet("peps-script-url",u); lsSet("peps-script-key",k);
   $("kIn").value="";
   start();
 }
-function showLockErr(m){var e=$("lockErr");e.textContent=m;e.style.display="block";}
+function showLockErr(m){ var e=$("lockErr"); e.textContent=m; e.style.display="block"; }
 
 function lockUp(){
-  sessionStorage.removeItem("oe-key");
   try{ localStorage.removeItem("peps-script-key"); }catch(e){}
   KEY=""; DATA=null;
   $("app").classList.add("hide");
@@ -396,172 +398,26 @@ function start(){
   $("lock").classList.add("hide");
   $("app").classList.remove("hide");
   $("rail").classList.remove("hide");
-  $("hdrSub").textContent = "Loading sheet";
+  var sub=$("hdrSub"); sub.style.display=""; sub.style.color=""; sub.textContent="Loading";
   loadData();
 }
-
-function apiUrl(){ return URL_ + (URL_.indexOf("?")>=0?"&":"?") + "key=" + encodeURIComponent(KEY) + "&t=" + Date.now(); }
+function apiUrl(){ return URL_+(URL_.indexOf("?")>=0?"&":"?")+"key="+encodeURIComponent(KEY)+"&t="+Date.now(); }
 
 function loadData(){
   fetch(apiUrl(), {method:"GET", redirect:"follow"})
     .then(function(r){ return r.json(); })
     .then(function(j){
-      if(j && j.error){ throw new Error(j.error); }
-      DATA = j;
-      build();
+      if(j && j.error) throw new Error(j.error);
+      DATA=j; build();
     })
     .catch(function(err){
-      $("hdrSub").textContent = "Couldn't load the sheet";
-      toast("Load failed. Check the key and that the script is deployed to anyone with the link. " + err.message, "bad");
+      var sub=$("hdrSub"); sub.style.display=""; sub.style.color="var(--red)";
+      sub.textContent="Could not load the sheet";
+      toast("Load failed. Check the key and that the script is deployed. "+err.message,"bad");
     });
 }
 
 /* ---------- build ---------- */
-function build(){
-  var orders = DATA[CFG.ordersSheet] || [];
-  var hdrRow = findHeaderRow(orders);
-  var headers = hdrRow >= 0 ? orders[hdrRow] : [];
-
-  /* Two different maps, and mixing them up would put data in the wrong column.
-     COLS  = where a field sits in the data we were sent (some columns are stripped out).
-             Used for reading history and building the dropdown lists.
-     WCOL  = the real header name and real column in the sheet. Used for writing. */
-  COLS = {}; WCOL = {};
-  var lower = headers.map(function(h){ return String(h==null?"":h).trim().toLowerCase(); });
-  var real = DATA._orderCols || null;
-  var realLower = {};
-  if(real) for(var rk in real) realLower[rk.trim().toLowerCase()] = {name:rk, idx:real[rk]};
-
-  FIELDS.forEach(function(f){
-    var idx = -1;
-    for(var i=0;i<f.h.length && idx<0;i++) idx = lower.indexOf(f.h[i].trim().toLowerCase());
-    COLS[f.k] = idx >= 0 ? idx : f.c;
-
-    var w = null;
-    for(var j=0;j<f.h.length && !w;j++) w = realLower[f.h[j].trim().toLowerCase()] || null;
-    WCOL[f.k] = w;   // null means the sheet has no such header, so we never write it
-  });
-
-  /* dropdown options: sheet validation > history > fallback */
-  var v = (DATA._validation && DATA._validation[CFG.ordersSheet]) || {};
-  OPTS = {};
-  ["source","payStatus","payMethod","funds","fulfil","packed","stockUp","payHit","freeVial"].forEach(function(k){
-    var fromValidation = (WCOL[k] ? (v[String(WCOL[k].idx)] || []) : []);
-    var fromHistory = [];
-    for(var i=hdrRow+1;i<orders.length;i++){
-      var r=orders[i]; if(!r) continue;
-      var cell=r[COLS[k]]; if(cell!=null && String(cell).trim()) fromHistory.push(cell);
-    }
-    var merged = uniq(fromValidation.concat(uniq(fromHistory)));
-    if(!merged.length) merged = FALLBACK[k].slice();
-    OPTS[k] = merged;
-  });
-
-  /* products */
-  var prod = DATA[CFG.productsSheet] || [];
-  var pH = -1;
-  for(var i=0;i<prod.length;i++){ if(prod[i] && String(prod[i][0]||"").trim().toUpperCase()==="SKU"){ pH=i; break; } }
-  var pm = {};
-  if(pH>=0) prod[pH].forEach(function(h,ix){ var k=String(h==null?"":h).trim(); if(k) pm[k]=ix; });
-  function pv(r,names){ for(var i=0;i<names.length;i++){ if(pm[names[i]]!=null && r[pm[names[i]]]!=null && String(r[pm[names[i]]]).trim()!=="") return r[pm[names[i]]]; } return ""; }
-  PRODUCTS = [];
-  for(var i=pH+1;i<prod.length;i++){
-    var r=prod[i]; if(!r || !String(r[0]||"").trim()) continue;
-    var status = String(pv(r,["Status"])||"").trim();
-    PRODUCTS.push({
-      sku: String(r[pm.SKU!=null?pm.SKU:0]||"").trim(),
-      name: String(pv(r,["Product","Product Name"])||"").trim(),
-      net: num(pv(r,["Customer Cost","Net Price ","Net Price","Net Price ex GST (AUD)"])),
-      cash: num(pv(r,[" Cash Price ","Cash Price ","Cash Price"])),
-      onHand: num(pv(r,["On Hand","Total Units"])),
-      status: status
-    });
-  }
-  PRODUCTS = PRODUCTS.filter(function(p){ return p.sku; });
-  PRODUCTS.sort(function(a,b){
-    var as = a.status.toLowerCase()==="active"?0:1, bs = b.status.toLowerCase()==="active"?0:1;
-    if(as!==bs) return as-bs;
-    return a.name.localeCompare(b.name);
-  });
-
-  /* customers: contacts tab first, then order history */
-  var map = {};
-  var con = DATA[CFG.contactsSheet] || [];
-  if(con.length){
-    var cH=-1, cm={};
-    for(var i=0;i<con.length;i++){
-      var row=con[i]; if(!row) continue;
-      var joined=row.map(function(x){return String(x==null?"":x).trim().toLowerCase();});
-      if(joined.indexOf("name")>=0 || joined.indexOf("customer name")>=0){ cH=i; break; }
-    }
-    if(cH>=0){
-      con[cH].forEach(function(h,ix){ var k=String(h==null?"":h).trim().toLowerCase(); if(k) cm[k]=ix; });
-      var nIx = cm["name"]!=null?cm["name"]:(cm["customer name"]!=null?cm["customer name"]:0);
-      var mIx = cm["mobile"]!=null?cm["mobile"]:(cm["phone"]!=null?cm["phone"]:(cm["phone number"]!=null?cm["phone number"]:1));
-      for(var i=cH+1;i<con.length;i++){
-        var row=con[i]; if(!row) continue;
-        var nm=String(row[nIx]||"").trim(); if(!nm) continue;
-        map[nm.toLowerCase()] = {name:nm, mobile:String(row[mIx]||"").trim(), source:"", orders:0, from:"contacts"};
-      }
-    }
-  }
-  for(var i=hdrRow+1;i<orders.length;i++){
-    var r=orders[i]; if(!r) continue;
-    var nm = String(r[COLS.customer]||"").trim(); if(!nm) continue;
-    var base = nm.split(/\s+via\s+/i)[0].trim();
-    var k = base.toLowerCase();
-    if(!map[k]) map[k] = {name:base, mobile:"", source:"", orders:0, from:"orders"};
-    map[k].orders++;
-    var mob = String(r[COLS.mobile]||"").trim();
-    if(mob && !map[k].mobile) map[k].mobile = mob;
-    var src = String(r[COLS.source]||"").trim();
-    if(src) map[k].source = src;
-  }
-  CUSTOMERS = Object.keys(map).map(function(k){ return map[k]; })
-    .sort(function(a,b){ return b.orders - a.orders || a.name.localeCompare(b.name); });
-
-  /* fill selects */
-  fillSel("srcIn", OPTS.source, "", true);
-  fillSel("payStat", OPTS.payStatus, pick(OPTS.payStatus, DEFAULTS.payStatus));
-  fillSel("payMeth", OPTS.payMethod, "", true);
-  fillSel("funds", OPTS.funds, "", true);
-  fillSel("payHit", OPTS.payHit, pick(OPTS.payHit, DEFAULTS.payHit));
-  fillSel("fulfil", OPTS.fulfil, pick(OPTS.fulfil, DEFAULTS.fulfil));
-  fillSel("packed", OPTS.packed, pick(OPTS.packed, DEFAULTS.packed));
-  fillSel("stockUp", OPTS.stockUp, pick(OPTS.stockUp, DEFAULTS.stockUp));
-  fillSel("freeVial", OPTS.freeVial, pick(OPTS.freeVial, DEFAULTS.freeVial));
-  fillSel("refIn", CUSTOMERS.map(function(c){return c.name;}), "", true, "No referral");
-
-  /* safety: never write two fields into the same cell, and never guess a column */
-  var used = {}, clash = [], unmatched = [];
-  FIELDS.forEach(function(f){
-    var w = WCOL[f.k];
-    if(!w){ unmatched.push(f.lbl); return; }
-    if(used[w.idx]) clash.push(colLetter(w.idx)+" "+used[w.idx]+" vs "+f.lbl);
-    else used[w.idx] = f.lbl;
-  });
-
-  $("hdrSub").textContent = PRODUCTS.length + " products · " + CUSTOMERS.length + " customers · writing to " + CFG.ordersSheet;
-  if(!DATA._orderCols){
-    toast("The script did not send the sheet's real columns. Update the Apps Script before adding orders.", "bad");
-    $("hdrSub").textContent += " · script needs updating";
-  } else if(clash.length){
-    toast("Two fields point at the same column: " + clash.join(", ") + ". Fix the header names first.", "bad");
-    $("hdrSub").textContent += " · column clash";
-  } else if(unmatched.length){
-    $("hdrSub").textContent += " · " + unmatched.length + " field" + (unmatched.length>1?"s":"") + " not on the sheet";
-    $("hdrSub").title = "No matching header, will be left blank: " + unmatched.join(", ");
-  }
-
-  if(!LINES.length) addLine();
-  render();
-}
-
-function pick(list, want){
-  for(var i=0;i<list.length;i++){ if(String(list[i]).trim().toLowerCase()===want.toLowerCase()) return list[i]; }
-  return list[0]||want;
-}
-
 function findHeaderRow(rows){
   for(var i=0;i<Math.min(rows.length,15);i++){
     var r=rows[i]; if(!r) continue;
@@ -572,8 +428,11 @@ function findHeaderRow(rows){
   }
   return 0;
 }
-
-function fillSel(id, list, sel, blankFirst, blankLabel){
+function pick(list,want){
+  for(var i=0;i<list.length;i++) if(String(list[i]).trim().toLowerCase()===want.toLowerCase()) return list[i];
+  return list[0]||want;
+}
+function fillSel(id,list,sel,blankFirst,blankLabel){
   var el=$(id); if(!el) return;
   var html = blankFirst ? '<option value="">'+esc(blankLabel||"Choose")+'</option>' : "";
   list.forEach(function(o){
@@ -582,63 +441,175 @@ function fillSel(id, list, sel, blankFirst, blankLabel){
   el.innerHTML = html;
 }
 
+function build(){
+  var orders = DATA[CFG.ordersSheet] || [];
+  var hdrRow = findHeaderRow(orders);
+  var headers = orders[hdrRow] || [];
+  var lower = headers.map(function(h){ return String(h==null?"":h).trim().toLowerCase(); });
+
+  RCOL = {};
+  for(var rk in READ_H){
+    var ix=-1, names=READ_H[rk];
+    for(var i=0;i<names.length && ix<0;i++) ix = lower.indexOf(names[i].trim().toLowerCase());
+    RCOL[rk]=ix;
+  }
+
+  /* dropdowns come off the sheet's own validation, keyed by the real column */
+  var v = (DATA._validation && DATA._validation[CFG.ordersSheet]) || {};
+  OPTS = {};
+  ["source","payStatus","payMethod","funds","fulfil","packed","stockUp","payHit","freeVial"].forEach(function(k){
+    var list = uniq((v[String(COL[k])]||[]).slice());
+    if(!list.length) list = FALLBACK[k].slice();
+    OPTS[k] = list;
+  });
+  if(RCOL.source>=0){
+    var hist=[];
+    for(var i2=hdrRow+1;i2<orders.length;i2++){
+      var r2=orders[i2]; if(!r2) continue;
+      var cell=r2[RCOL.source]; if(cell!=null && String(cell).trim()) hist.push(cell);
+    }
+    OPTS.source = uniq(OPTS.source.concat(uniq(hist)));
+  }
+
+  /* products */
+  var prod = DATA[CFG.productsSheet] || [];
+  var pH=-1;
+  for(var i3=0;i3<prod.length;i3++){ if(prod[i3] && String(prod[i3][0]||"").trim().toUpperCase()==="SKU"){ pH=i3; break; } }
+  var pm={};
+  if(pH>=0) prod[pH].forEach(function(h,ix){ var k=String(h==null?"":h).trim(); if(k) pm[k]=ix; });
+  function pv(r,names){
+    for(var i=0;i<names.length;i++){
+      var ix=pm[names[i]];
+      if(ix!=null && r[ix]!=null && String(r[ix]).trim()!=="") return r[ix];
+    }
+    return "";
+  }
+  PRODUCTS=[];
+  for(var i4=pH+1;i4<prod.length;i4++){
+    var r4=prod[i4]; if(!r4 || !String(r4[0]||"").trim()) continue;
+    PRODUCTS.push({
+      sku: String(r4[pm.SKU!=null?pm.SKU:0]||"").trim(),
+      name: String(pv(r4,["Product","Product Name"])||"").trim(),
+      net: num(pv(r4,["Customer Cost","Net Price ","Net Price","Net Price ex GST (AUD)"])),
+      cash: num(pv(r4,[" Cash Price ","Cash Price ","Cash Price"])),
+      onHand: num(pv(r4,["On Hand","Total Units"])),
+      status: String(pv(r4,["Status"])||"").trim()
+    });
+  }
+  PRODUCTS = PRODUCTS.filter(function(p){ return p.sku; });
+  PRODUCTS.sort(function(a,b){
+    var as=a.status.toLowerCase()==="active"?0:1, bs=b.status.toLowerCase()==="active"?0:1;
+    return as!==bs ? as-bs : (a.name||a.sku).localeCompare(b.name||b.sku);
+  });
+
+  /* customers: Contacts tab for numbers, order history for who exists */
+  var map={};
+  var con = DATA[CFG.contactsSheet] || [];
+  if(con.length){
+    var cH=-1, cm={};
+    for(var i5=0;i5<con.length;i5++){
+      var row=con[i5]; if(!row) continue;
+      var j=row.map(function(x){ return String(x==null?"":x).trim().toLowerCase(); });
+      if(j.indexOf("name")>=0 || j.indexOf("customer name")>=0){ cH=i5; break; }
+    }
+    if(cH>=0){
+      con[cH].forEach(function(h,ix){ var k=String(h==null?"":h).trim().toLowerCase(); if(k && cm[k]==null) cm[k]=ix; });
+      var nIx = cm["name"]!=null?cm["name"]:(cm["customer name"]!=null?cm["customer name"]:0);
+      var mIx = cm["phone"]!=null?cm["phone"]:(cm["mobile"]!=null?cm["mobile"]:1);
+      for(var i6=cH+1;i6<con.length;i6++){
+        var row6=con[i6]; if(!row6) continue;
+        var full6=String(row6[nIx]||"").trim(); if(!full6) continue;
+        var b6=baseName(full6), k6=b6.toLowerCase();
+        if(!map[k6]) map[k6]={name:b6, full:full6, mobile:"", orders:0};
+        var ph=String(row6[mIx]||"").trim();
+        if(ph && !map[k6].mobile) map[k6].mobile=ph;
+        if(full6.length > String(map[k6].full||"").length) map[k6].full=full6;
+      }
+    }
+  }
+  if(RCOL.customer>=0){
+    for(var i7=hdrRow+1;i7<orders.length;i7++){
+      var r7=orders[i7]; if(!r7) continue;
+      var full7=String(r7[RCOL.customer]||"").trim(); if(!full7) continue;
+      var b7=baseName(full7), k7=b7.toLowerCase();
+      if(!map[k7]) map[k7]={name:b7, full:full7, mobile:"", orders:0};
+      if(full7.length > String(map[k7].full||"").length) map[k7].full=full7;
+      map[k7].orders++;
+    }
+  }
+  CUSTOMERS = Object.keys(map).map(function(k){ return map[k]; })
+    .sort(function(a,b){ return b.orders-a.orders || a.name.localeCompare(b.name); });
+
+  fillSel("srcIn", OPTS.source, "", true);
+  fillSel("payStat", OPTS.payStatus, pick(OPTS.payStatus, DEFAULTS.payStatus));
+  fillSel("payMeth", OPTS.payMethod, "", true);
+  fillSel("funds", OPTS.funds, "", true);
+  fillSel("payHit", OPTS.payHit, pick(OPTS.payHit, DEFAULTS.payHit));
+  fillSel("fulfil", OPTS.fulfil, pick(OPTS.fulfil, DEFAULTS.fulfil));
+  fillSel("packed", OPTS.packed, pick(OPTS.packed, DEFAULTS.packed));
+  fillSel("stockUp", OPTS.stockUp, pick(OPTS.stockUp, DEFAULTS.stockUp));
+  fillSel("freeVial", OPTS.freeVial, pick(OPTS.freeVial, DEFAULTS.freeVial));
+  /* referrers keep their own referral tail so chains nest by themselves */
+  fillSel("refIn", uniq(CUSTOMERS.map(function(c){ return c.full||c.name; })), "", true, "No referral");
+
+  var sub=$("hdrSub");
+  if(!orders.length){ sub.style.display=""; sub.style.color="var(--red)"; sub.textContent="Could not read Customer_Orders"; }
+  else { sub.textContent=""; sub.style.display="none"; }
+
+  if(!LINES.length) addLine();
+  render();
+}
+
 /* ---------- customer combo ---------- */
-var comboHi = -1, comboItems = [];
+var comboHi=-1, comboItems=[];
 function renderCombo(){
-  var q = $("custIn").value.trim().toLowerCase();
-  var list = CUSTOMERS.filter(function(c){ return !q || c.name.toLowerCase().indexOf(q)>=0; }).slice(0,40);
-  comboItems = list;
-  var html = "";
+  var q=$("custIn").value.trim().toLowerCase();
+  var list=CUSTOMERS.filter(function(c){ return !q || c.name.toLowerCase().indexOf(q)>=0; }).slice(0,40);
+  comboItems=list;
+  var html="";
   if(q && !CUSTOMERS.some(function(c){ return c.name.toLowerCase()===q; })){
     html += '<div class="combo-item new" data-new="1">Add new customer: '+esc($("custIn").value.trim())+'</div>';
   }
   list.forEach(function(c,i){
+    var tail = (c.full && c.full!==c.name) ? c.full.slice(c.name.length).trim() : "";
     html += '<div class="combo-item" data-i="'+i+'">'+esc(c.name)+
+            (tail?' <span style="color:var(--mut)">'+esc(tail)+'</span>':'')+
             '<small>'+esc(c.mobile||"no number")+(c.orders?"  ·  "+c.orders+" order"+(c.orders>1?"s":""):"")+'</small></div>';
   });
-  if(!html) html = '<div class="combo-item" style="color:var(--mut)">Nothing matches. Keep typing to add a new customer.</div>';
-  $("custList").innerHTML = html;
+  if(!html) html='<div class="combo-item" style="color:var(--mut)">Nothing matches. Keep typing to add a new customer.</div>';
+  $("custList").innerHTML=html;
   $("custList").classList.add("open");
-  comboHi = -1;
+  comboHi=-1;
 }
 function closeCombo(){ $("custList").classList.remove("open"); }
-
 function selectCustomer(c){
-  $("custIn").value = c.name;
-  if(c.mobile) $("mobIn").value = c.mobile;
-  if(c.source){
-    var s=$("srcIn");
-    for(var i=0;i<s.options.length;i++){ if(s.options[i].value===c.source){ s.value=c.source; break; } }
-  }
+  $("custIn").value=c.name;            // base name only, the referral is its own field
+  if(c.mobile) $("mobIn").value=c.mobile;
   closeCombo(); render();
 }
 
 /* ---------- lines ---------- */
-function addLine(){
-  LINES.push({id:++lineSeq, sku:"", qty:1, price:0, manual:false});
-  renderLines(); render();
-}
+function addLine(){ LINES.push({id:++lineSeq, sku:"", qty:1, price:0, manual:false}); renderLines(); render(); }
 function removeLine(id){
-  LINES = LINES.filter(function(l){ return l.id!==id; });
+  LINES=LINES.filter(function(l){ return l.id!==id; });
   if(!LINES.length) addLine(); else { renderLines(); render(); }
 }
 function priceFor(sku){
-  var p = PRODUCTS.filter(function(x){ return x.sku===sku; })[0];
+  var p=PRODUCTS.filter(function(x){ return x.sku===sku; })[0];
   if(!p) return 0;
-  var cash = String($("payMeth").value||"").toLowerCase().indexOf("cash")>=0;
-  if(cash && p.cash>0) return p.cash;
-  return p.net||0;
+  var cash=String($("payMeth").value||"").toLowerCase().indexOf("cash")>=0;
+  return (cash && p.cash>0) ? p.cash : (p.net||0);
 }
 function renderLines(){
   var html="";
   LINES.forEach(function(l,ix){
-    var p = PRODUCTS.filter(function(x){ return x.sku===l.sku; })[0];
+    var p=PRODUCTS.filter(function(x){ return x.sku===l.sku; })[0];
     var stockTxt="", stockCls="";
     if(p){
-      var left = p.onHand - l.qty;
-      stockTxt = p.onHand + " on hand, " + left + " left after this";
-      if(p.onHand<=0){ stockCls="out"; stockTxt = "none on hand"; }
-      else if(left<0){ stockCls="out"; stockTxt = "only " + p.onHand + " on hand, short by " + Math.abs(left); }
+      var left=p.onHand-l.qty;
+      stockTxt=p.onHand+" on hand, "+left+" left after this";
+      if(p.onHand<=0){ stockCls="out"; stockTxt="none on hand"; }
+      else if(left<0){ stockCls="out"; stockTxt="only "+p.onHand+" on hand, short by "+Math.abs(left); }
       else if(left<=2){ stockCls="low"; }
     }
     html += '<div class="line">'+
@@ -650,143 +621,124 @@ function renderLines(){
           '<select data-sku="'+l.id+'"><option value="">Choose a product</option>'+
           PRODUCTS.map(function(pr){
             return '<option value="'+esc(pr.sku)+'"'+(pr.sku===l.sku?" selected":"")+'>'+esc(pr.name||pr.sku)+
-                   (pr.status && pr.status.toLowerCase()!=="active"?" ("+esc(pr.status)+")":"")+'</option>';
+                   (pr.status && pr.status.toLowerCase()!=="active"?" "+esc(pr.status):"")+'</option>';
           }).join("")+'</select>'+
           (stockTxt?'<div class="stock '+stockCls+'">'+esc(stockTxt)+'</div>':'')+
         '</div>'+
         '<div><label>Qty</label><input type="number" min="1" step="1" value="'+l.qty+'" data-qty="'+l.id+'"></div>'+
-        '<div><label>Unit price</label><input type="number" min="0" step="0.01" value="'+(l.price||"")+'" data-price="'+l.id+'"></div>'+
+        '<div><label>Price each</label><input type="number" min="0" step="0.01" value="'+(l.price||"")+'" data-price="'+l.id+'"></div>'+
       '</div></div>';
   });
-  $("lines").innerHTML = html;
+  $("lines").innerHTML=html;
 }
 
 /* ---------- compute ---------- */
+/* Exactly: Jordon A (Referral Cara W)
+   If the referrer was referred too, their stored name already carries their own
+   tail, so it nests on its own: Emily Wonka (Referral Katie Wonka (Referral Monique)) */
 function customerName(){
-  var base = $("custIn").value.trim();
-  var ref = $("refIn").value.trim();
-  if(base && ref && ref.toLowerCase()!==base.toLowerCase()) return base + " via " + ref;
-  return base;
+  var base=$("custIn").value.trim();
+  var ref=$("refIn").value.trim();
+  if(!base) return "";
+  if(!ref) return base;
+  if(baseName(ref).toLowerCase()===base.toLowerCase()) return base;   // no self referral
+  return base+" (Referral "+ref+")";
 }
-function validLines(){
-  return LINES.filter(function(l){ return l.sku && l.qty>0; });
-}
+function validLines(){ return LINES.filter(function(l){ return l.sku && l.qty>0; }); }
+
 function buildRows(){
-  var name = customerName();
-  var p0 = {};
-  p0.orderDate = today();
-  p0.source    = $("srcIn").value;
-  p0.customer  = name;
-  p0.mobile    = $("mobIn").value.trim();
-  p0.payStatus = $("payStat").value;
-  p0.payMethod = $("payMeth").value;
-  p0.funds     = $("funds").value;
-  p0.fulfil    = $("fulfil").value;
-  p0.packed    = $("packed").value;
-  p0.stockUp   = $("stockUp").value;
-  p0.payHit    = $("payHit").value;
-  p0.freeVial  = $("freeVial").value;
-  p0.credit    = $("credit").value.trim()==="" ? "" : num($("credit").value);
-  p0.notes     = $("notes").value.trim();
+  var v0={};
+  v0.orderDate=today();
+  v0.source=$("srcIn").value;
+  v0.customer=customerName();
+  v0.mobile=$("mobIn").value.trim();
+  v0.payStatus=$("payStat").value;
+  v0.payMethod=$("payMeth").value;
+  v0.funds=$("funds").value;
+  v0.fulfil=$("fulfil").value;
+  v0.packed=$("packed").value;
+  v0.stockUp=$("stockUp").value;
+  v0.payHit=$("payHit").value;
+  v0.freeVial=$("freeVial").value;
+  v0.credit=$("credit").value.trim()==="" ? "" : num($("credit").value);
+  v0.notes=$("notes").value.trim();
 
   return validLines().map(function(l){
-    var prod = PRODUCTS.filter(function(x){ return x.sku===l.sku; })[0] || {};
-    var v = {};
-    for(var k in p0) v[k] = p0[k];
-    v.sku = l.sku;
-    v.product = prod.name || "";
-    v.qty = l.qty;
-    v.unitPrice = l.price;
-
-    /* keyed by the sheet's own header name, so a moved column can never misfile it */
-    var fields = {}, cells = {};
-    FIELDS.forEach(function(f){
-      var w = WCOL[f.k];
-      if(!w) return;
-      if(v[f.k] === undefined) return;
-      fields[w.name] = v[f.k];
-      cells[w.idx] = v[f.k];
-    });
-    return {fields: fields, cells: cells};
+    var v={}; for(var k in v0) v[k]=v0[k];
+    v.sku=l.sku; v.qty=l.qty;
+    var cells={};
+    FIELDS.forEach(function(f){ if(v[f.k]!==undefined) cells[f.c]=v[f.k]; });
+    return {cells:cells};
   });
 }
 
 function render(){
   renderLines();
-  var vl = validLines();
-  var units = vl.reduce(function(s,l){ return s + l.qty; }, 0);
-  var total = vl.reduce(function(s,l){ return s + l.qty*l.price; }, 0);
-  $("sLines").textContent = vl.length;
-  $("sUnits").textContent = units;
-  $("sTotal").textContent = money(total);
-  var st = $("payStat").value || "Unpaid";
-  $("sStat").innerHTML = '<span class="pill '+(st.toLowerCase()==="paid"?"pill-g":(st.toLowerCase().indexOf("part")>=0?"pill-a":"pill-r"))+'">'+esc(st)+'</span>';
+  var vl=validLines();
+  var units=vl.reduce(function(s,l){ return s+l.qty; },0);
+  var total=vl.reduce(function(s,l){ return s+l.qty*l.price; },0);
+  $("sLines").textContent=vl.length;
+  $("sUnits").textContent=units;
+  $("sTotal").textContent=money(total);
+  var st=$("payStat").value||"Unpaid";
+  $("sStat").innerHTML='<span class="pill '+(st.toLowerCase()==="paid"?"pill-g":(st.toLowerCase().indexOf("part")>=0?"pill-a":"pill-r"))+'">'+esc(st)+'</span>';
 
-  var nm = customerName();
-  $("nameOut").innerHTML = nm
-    ? 'Goes into the sheet as <b>' + esc(nm) + '</b>'
-    : 'Pick a customer from the list or type a new name.';
+  var nm=customerName();
+  $("nameOut").innerHTML = nm ? 'Column C reads <b>'+esc(nm)+'</b>'
+                              : 'Pick a customer from the list or type a new name.';
 
-  var cash = String($("payMeth").value||"").toLowerCase().indexOf("cash")>=0;
-  var cn = $("cashNote");
+  var cash=String($("payMeth").value||"").toLowerCase().indexOf("cash")>=0;
+  var cn=$("cashNote");
   cn.classList.toggle("hide", !cash);
-  if(cash) cn.innerHTML = 'Cash selected, so prices pulled the <b>cash price</b> where the product has one.';
+  if(cash) cn.innerHTML='Cash selected, so prices pulled the <b>cash price</b> where the product has one.';
 
-  /* preview */
-  var rows = buildRows();
+  var rows=buildRows();
   if(!rows.length){
-    $("prevTbl").innerHTML = '<tr><td class="empty">Pick a product and the exact rows show up here.</td></tr>';
+    $("prevTbl").innerHTML='<tr><td class="empty">Pick a product and the exact rows show up here.</td></tr>';
   } else {
-    var shown = FIELDS.filter(function(f){ return WCOL[f.k]; })
-                      .sort(function(a,b){ return WCOL[a.k].idx - WCOL[b.k].idx; });
-    var head = "<tr>" + shown.map(function(f){
-      return "<th><span>"+esc(colLetter(WCOL[f.k].idx))+"</span> "+esc(f.lbl)+"</th>";
-    }).join("") + "</tr>";
-    var body = rows.map(function(r){
-      return "<tr>" + shown.map(function(f){
-        var v = r.cells[WCOL[f.k].idx];
+    var shown=FIELDS.slice().sort(function(a,b){ return a.c-b.c; });
+    var head="<tr>"+shown.map(function(f){
+      return "<th><span>"+esc(colLetter(f.c))+"</span> "+esc(f.lbl)+"</th>";
+    }).join("")+"</tr>";
+    var body=rows.map(function(r){
+      return "<tr>"+shown.map(function(f){
+        var v=r.cells[f.c];
         return "<td>"+esc(v===""||v==null?"—":v)+"</td>";
-      }).join("") + "</tr>";
+      }).join("")+"</tr>";
     }).join("");
-    $("prevTbl").innerHTML = head + body;
+    $("prevTbl").innerHTML=head+body;
   }
 
   var ready = rows.length>0 && customerName();
   $("submitBtn").disabled = !ready || busy;
-  $("submitBtn").textContent = busy ? "Adding" : ("Add order to sheet" + (rows.length>1?" ("+rows.length+" rows)":""));
+  $("submitBtn").textContent = busy ? "Adding" : ("Add order to sheet"+(rows.length>1?" ("+rows.length+" rows)":""));
 }
 
 /* ---------- submit ---------- */
 function submitOrder(){
   if(busy) return;
-  var rows = buildRows();
+  var rows=buildRows();
   if(!rows.length || !customerName()){ toast("Need a customer and at least one product.","bad"); return; }
 
-  var short = validLines().filter(function(l){
-    var p = PRODUCTS.filter(function(x){ return x.sku===l.sku; })[0];
-    return p && p.onHand - l.qty < 0;
+  var short=validLines().filter(function(l){
+    var p=PRODUCTS.filter(function(x){ return x.sku===l.sku; })[0];
+    return p && p.onHand-l.qty<0;
   });
   if(short.length && !confirm("Not enough stock on hand for "+short.length+" line(s). Add the order anyway?")) return;
 
-  busy = true; render();
-  var payload = {
-    key: KEY,
-    action: "addOrder",
-    sheet: CFG.ordersSheet,
-    ref: "OE-" + Date.now() + "-" + Math.random().toString(36).slice(2,8),
-    rows: rows.map(function(r){ return {fields: r.fields}; })
+  busy=true; render();
+  var payload={
+    key:KEY, action:"addOrder", sheet:CFG.ordersSheet,
+    ref:"OE-"+Date.now()+"-"+Math.random().toString(36).slice(2,8),
+    rows: rows.map(function(r){ return {cells:r.cells}; })
   };
 
-  fetch(URL_, {
-    method: "POST",
-    redirect: "follow",
-    headers: {"Content-Type":"text/plain;charset=utf-8"},
-    body: JSON.stringify(payload)
-  })
+  fetch(URL_, {method:"POST", redirect:"follow",
+    headers:{"Content-Type":"text/plain;charset=utf-8"},
+    body: JSON.stringify(payload)})
   .then(function(r){ return r.text(); })
   .then(function(txt){
-    var j = null;
-    try { j = JSON.parse(txt); } catch(e){}
+    var j=null; try{ j=JSON.parse(txt); }catch(e){}
     if(j && j.ok){
       toast("Added "+j.added+" row"+(j.added>1?"s":"")+" to the sheet.","ok");
       clearForm(true);
@@ -794,43 +746,43 @@ function submitOrder(){
     } else if(j && j.error){
       toast("Sheet said no: "+j.error,"bad");
     } else {
-      toast("Sent, but the sheet didn't confirm. Check Customer_Orders before sending again.","bad");
+      toast("Sent, but the sheet did not confirm. Check Customer_Orders before sending again.","bad");
     }
   })
   .catch(function(err){
-    toast("Couldn't reach the script: "+err.message+". Use Copy rows and paste it in.","bad");
+    toast("Could not reach the script: "+err.message+". Use Copy rows and paste it in.","bad");
   })
-  .finally(function(){ busy = false; render(); });
+  .finally(function(){ busy=false; render(); });
 }
 
 function copyRows(){
-  var rows = buildRows();
+  var rows=buildRows();
   if(!rows.length){ toast("Nothing to copy yet.","bad"); return; }
-  var maxIx = 0;
-  FIELDS.forEach(function(f){ if(WCOL[f.k] && WCOL[f.k].idx>maxIx) maxIx = WCOL[f.k].idx; });
-  var tsv = rows.map(function(r){
+  var maxIx=0; FIELDS.forEach(function(f){ if(f.c>maxIx) maxIx=f.c; });
+  var tsv=rows.map(function(r){
     var arr=[];
     for(var i=0;i<=maxIx;i++){ var v=r.cells[i]; arr.push(v===undefined||v===null?"":String(v)); }
     return arr.join("\t");
   }).join("\n");
   navigator.clipboard.writeText(tsv).then(function(){
-    toast("Rows copied. Click cell A on the next empty row in Customer_Orders and paste.","ok");
+    toast("Rows copied. Click column A on the next empty row and paste.","ok");
   }).catch(function(){
     window.prompt("Copy this and paste into the sheet:", tsv);
   });
 }
 
 function clearForm(keepSettings){
-  $("custIn").value=""; $("mobIn").value=""; $("refIn").value=""; $("notes").value=""; $("credit").value="";
-  LINES = []; lineSeq = 0; addLine();
+  $("custIn").value=""; $("mobIn").value=""; $("refIn").value="";
+  $("notes").value=""; $("credit").value="";
+  LINES=[]; lineSeq=0; addLine();
   if(!keepSettings){
     $("srcIn").value=""; $("payMeth").value=""; $("funds").value="";
-    $("payStat").value = pick(OPTS.payStatus||[], DEFAULTS.payStatus);
-    $("fulfil").value  = pick(OPTS.fulfil||[], DEFAULTS.fulfil);
-    $("packed").value  = pick(OPTS.packed||[], DEFAULTS.packed);
-    $("stockUp").value = pick(OPTS.stockUp||[], DEFAULTS.stockUp);
-    $("payHit").value  = pick(OPTS.payHit||[], DEFAULTS.payHit);
-    $("freeVial").value= pick(OPTS.freeVial||[], DEFAULTS.freeVial);
+    $("payStat").value=pick(OPTS.payStatus||[],DEFAULTS.payStatus);
+    $("fulfil").value=pick(OPTS.fulfil||[],DEFAULTS.fulfil);
+    $("packed").value=pick(OPTS.packed||[],DEFAULTS.packed);
+    $("stockUp").value=pick(OPTS.stockUp||[],DEFAULTS.stockUp);
+    $("payHit").value=pick(OPTS.payHit||[],DEFAULTS.payHit);
+    $("freeVial").value=pick(OPTS.freeVial||[],DEFAULTS.freeVial);
   }
   render();
 }
@@ -839,10 +791,9 @@ function clearForm(keepSettings){
 $("custIn").addEventListener("input", function(){ renderCombo(); render(); });
 $("custIn").addEventListener("focus", renderCombo);
 $("custIn").addEventListener("keydown", function(e){
-  var items = $("custList").querySelectorAll(".combo-item");
+  var items=$("custList").querySelectorAll(".combo-item");
   if(e.key==="ArrowDown"||e.key==="ArrowUp"){
-    e.preventDefault();
-    if(!items.length) return;
+    e.preventDefault(); if(!items.length) return;
     comboHi += (e.key==="ArrowDown"?1:-1);
     if(comboHi<0) comboHi=items.length-1;
     if(comboHi>=items.length) comboHi=0;
@@ -854,38 +805,36 @@ $("custIn").addEventListener("keydown", function(e){
   } else if(e.key==="Escape"){ closeCombo(); }
 });
 $("custList").addEventListener("click", function(e){
-  var it = e.target.closest(".combo-item"); if(!it) return;
+  var it=e.target.closest(".combo-item"); if(!it) return;
   if(it.dataset.new){ closeCombo(); render(); return; }
-  var i = parseInt(it.dataset.i,10);
+  var i=parseInt(it.dataset.i,10);
   if(!isNaN(i) && comboItems[i]) selectCustomer(comboItems[i]);
 });
-document.addEventListener("click", function(e){
-  if(!e.target.closest("#custCombo")) closeCombo();
-});
+document.addEventListener("click", function(e){ if(!e.target.closest("#custCombo")) closeCombo(); });
 
 $("lines").addEventListener("change", function(e){
-  var t=e.target;
+  var t=e.target, l;
   if(t.dataset.sku){
-    var l = LINES.filter(function(x){ return x.id==t.dataset.sku; })[0];
-    if(l){ l.sku=t.value; if(!l.manual) l.price = priceFor(t.value); }
+    l=LINES.filter(function(x){ return x.id==t.dataset.sku; })[0];
+    if(l){ l.sku=t.value; if(!l.manual) l.price=priceFor(t.value); }
     render();
   } else if(t.dataset.qty){
-    var l2 = LINES.filter(function(x){ return x.id==t.dataset.qty; })[0];
-    if(l2) l2.qty = Math.max(1, parseInt(t.value,10)||1);
+    l=LINES.filter(function(x){ return x.id==t.dataset.qty; })[0];
+    if(l) l.qty=Math.max(1, parseInt(t.value,10)||1);
     render();
   } else if(t.dataset.price){
-    var l3 = LINES.filter(function(x){ return x.id==t.dataset.price; })[0];
-    if(l3){ l3.price = num(t.value); l3.manual = true; }
+    l=LINES.filter(function(x){ return x.id==t.dataset.price; })[0];
+    if(l){ l.price=num(t.value); l.manual=true; }
     render();
   }
 });
 $("lines").addEventListener("click", function(e){
-  var b = e.target.closest("[data-del]"); if(!b) return;
+  var b=e.target.closest("[data-del]"); if(!b) return;
   removeLine(parseInt(b.dataset.del,10));
 });
 $("addLine").addEventListener("click", addLine);
 $("payMeth").addEventListener("change", function(){
-  LINES.forEach(function(l){ if(l.sku && !l.manual) l.price = priceFor(l.sku); });
+  LINES.forEach(function(l){ if(l.sku && !l.manual) l.price=priceFor(l.sku); });
   render();
 });
 ["srcIn","refIn","payStat","funds","payHit","fulfil","packed","stockUp","freeVial","credit","notes","mobIn"]
@@ -894,10 +843,11 @@ $("payMeth").addEventListener("change", function(){
 $("submitBtn").addEventListener("click", submitOrder);
 $("copyBtn").addEventListener("click", copyRows);
 $("clearBtn").addEventListener("click", function(){ if(confirm("Clear the form?")) clearForm(false); });
-$("reloadBtn").addEventListener("click", function(){ $("hdrSub").textContent="Reloading"; loadData(); });
+$("reloadBtn").addEventListener("click", function(){ loadData(); });
 $("lockBtn").addEventListener("click", lockUp);
 window.addEventListener("beforeunload", function(e){
   if(validLines().length && customerName()){ e.preventDefault(); e.returnValue=""; }
 });
-</script></body>
+</script>
+</body>
 </html>
