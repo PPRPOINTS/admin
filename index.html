@@ -221,7 +221,7 @@ tr:last-child td{border-bottom:none}
         <div class="combo-list" id="custList"></div>
       </div>
       <div><label for="mobIn">Mobile</label><input type="tel" id="mobIn" autocomplete="off" placeholder="04..."></div>
-      <div><label for="refIn">Referred by</label><select id="refIn"></select></div>
+      <div><label for="refIn">Referred by</label><input type="text" id="refIn" list="refList" autocomplete="off" spellcheck="false" placeholder="Pick one or type a new partner"><datalist id="refList"></datalist></div>
       <div><label for="srcIn">Where the lead came from</label><select id="srcIn"></select></div>
     </div>
     <div class="echo" id="nameOut"></div>
@@ -328,7 +328,7 @@ var FALLBACK = {
   fulfil:    ["Pending","Packed","Sent","Delivered","Cancelled"],
   packed:    ["No","Yes"], stockUp:["No","Yes"], payHit:["No","Yes"], freeVial:["No","Yes"]
 };
-var DEFAULTS = {payStatus:"Unpaid",fulfil:"Pending",packed:"No",stockUp:"No",payHit:"No",freeVial:"No"};
+var DEFAULTS = {payStatus:"Unpaid",fulfil:"Pending",packed:"No",stockUp:"No",payHit:"No",freeVial:"No",funds:"Bank"};
 
 /* ---------- state ---------- */
 var KEY="", URL_="";
@@ -499,7 +499,7 @@ function build(){
   PRODUCTS = PRODUCTS.filter(function(p){ return p.sku; });
   PRODUCTS.sort(function(a,b){
     var as=a.status.toLowerCase()==="active"?0:1, bs=b.status.toLowerCase()==="active"?0:1;
-    return as!==bs ? as-bs : (a.name||a.sku).localeCompare(b.name||b.sku);
+    return as!==bs ? as-bs : (a.name||a.sku).localeCompare(b.name||b.sku, "en", {sensitivity:"base"});
   });
 
   /* customers: Contacts tab for numbers, order history for who exists */
@@ -538,19 +538,22 @@ function build(){
     }
   }
   CUSTOMERS = Object.keys(map).map(function(k){ return map[k]; })
-    .sort(function(a,b){ return b.orders-a.orders || a.name.localeCompare(b.name); });
+    .sort(function(a,b){ return a.name.localeCompare(b.name, "en", {sensitivity:"base"}); });
 
   fillSel("srcIn", OPTS.source, "", true);
   fillSel("payStat", OPTS.payStatus, pick(OPTS.payStatus, DEFAULTS.payStatus));
   fillSel("payMeth", OPTS.payMethod, "", true);
-  fillSel("funds", OPTS.funds, "", true);
+  fillSel("funds", OPTS.funds, pick(OPTS.funds, DEFAULTS.funds));
   fillSel("payHit", OPTS.payHit, pick(OPTS.payHit, DEFAULTS.payHit));
   fillSel("fulfil", OPTS.fulfil, pick(OPTS.fulfil, DEFAULTS.fulfil));
   fillSel("packed", OPTS.packed, pick(OPTS.packed, DEFAULTS.packed));
   fillSel("stockUp", OPTS.stockUp, pick(OPTS.stockUp, DEFAULTS.stockUp));
   fillSel("freeVial", OPTS.freeVial, pick(OPTS.freeVial, DEFAULTS.freeVial));
-  /* referrers keep their own referral tail so chains nest by themselves */
-  fillSel("refIn", uniq(CUSTOMERS.map(function(c){ return c.full||c.name; })), "", true, "No referral");
+  /* referrers keep their own referral tail so chains nest by themselves.
+     A datalist, not a dropdown, so a brand new partner can just be typed in. */
+  var refs = uniq(CUSTOMERS.map(function(c){ return c.full||c.name; }))
+              .sort(function(a,b){ return a.localeCompare(b, "en", {sensitivity:"base"}); });
+  $("refList").innerHTML = refs.map(function(r){ return '<option value="'+esc(r)+'"></option>'; }).join("");
 
   var sub=$("hdrSub");
   if(!orders.length){ sub.style.display=""; sub.style.color="var(--red)"; sub.textContent="Could not read Customer_Orders"; }
@@ -564,10 +567,13 @@ function build(){
 var comboHi=-1, comboItems=[];
 function renderCombo(){
   var q=$("custIn").value.trim().toLowerCase();
-  var list=CUSTOMERS.filter(function(c){ return !q || c.name.toLowerCase().indexOf(q)>=0; }).slice(0,40);
+  var list=CUSTOMERS.filter(function(c){
+    if(!q) return true;
+    return c.name.toLowerCase().indexOf(q)>=0 || String(c.full||"").toLowerCase().indexOf(q)>=0;
+  }).slice(0,40);
   comboItems=list;
   var html="";
-  if(q && !CUSTOMERS.some(function(c){ return c.name.toLowerCase()===q; })){
+  if(q && !CUSTOMERS.some(function(c){ return c.name.toLowerCase()===q || String(c.full||"").toLowerCase()===q; })){
     html += '<div class="combo-item new" data-new="1">Add new customer: '+esc($("custIn").value.trim())+'</div>';
   }
   list.forEach(function(c,i){
@@ -583,7 +589,8 @@ function renderCombo(){
 }
 function closeCombo(){ $("custList").classList.remove("open"); }
 function selectCustomer(c){
-  $("custIn").value=c.name;            // base name only, the referral is its own field
+  $("custIn").value = c.full || c.name;   // exactly as it appears in the sheet
+  $("refIn").value = "";                   // the tail is already in the name
   if(c.mobile) $("mobIn").value=c.mobile;
   closeCombo(); render();
 }
@@ -636,13 +643,18 @@ function renderLines(){
 /* Exactly: Jordon A (Referral Cara W)
    If the referrer was referred too, their stored name already carries their own
    tail, so it nests on its own: Emily Wonka (Referral Katie Wonka (Referral Monique)) */
+/* The name field holds the exact string that lands in column C.
+   Picking an existing customer puts their full stored name in, referral tail and all,
+   because that is the string the rest of the system matches on.
+   Typing a fresh name and choosing a referral builds:  Jordon A (Referral Cara W) */
 function customerName(){
-  var base=$("custIn").value.trim();
+  var typed=$("custIn").value.trim();
   var ref=$("refIn").value.trim();
-  if(!base) return "";
-  if(!ref) return base;
-  if(baseName(ref).toLowerCase()===base.toLowerCase()) return base;   // no self referral
-  return base+" (Referral "+ref+")";
+  if(!typed) return "";
+  if(/\(Referral\b/i.test(typed)) return typed;                        // already carries its chain
+  if(!ref) return typed;
+  if(baseName(ref).toLowerCase()===baseName(typed).toLowerCase()) return typed;   // no self referral
+  return typed+" (Referral "+ref+")";
 }
 function validLines(){ return LINES.filter(function(l){ return l.sku && l.qty>0; }); }
 
@@ -684,8 +696,11 @@ function render(){
   $("sStat").innerHTML='<span class="pill '+(st.toLowerCase()==="paid"?"pill-g":(st.toLowerCase().indexOf("part")>=0?"pill-a":"pill-r"))+'">'+esc(st)+'</span>';
 
   var nm=customerName();
-  $("nameOut").innerHTML = nm ? 'Column C reads <b>'+esc(nm)+'</b>'
-                              : 'Pick a customer from the list or type a new name.';
+  var typedHasRef=/\(Referral\b/i.test($("custIn").value.trim());
+  $("nameOut").innerHTML = nm
+    ? 'Column C reads <b>'+esc(nm)+'</b>' +
+      (typedHasRef && $("refIn").value.trim() ? '<br>The name already carries a referral, so the box above is ignored.' : '')
+    : 'Pick a customer from the list or type a new name.';
 
   var cash=String($("payMeth").value||"").toLowerCase().indexOf("cash")>=0;
   var cn=$("cashNote");
@@ -776,7 +791,8 @@ function clearForm(keepSettings){
   $("notes").value=""; $("credit").value="";
   LINES=[]; lineSeq=0; addLine();
   if(!keepSettings){
-    $("srcIn").value=""; $("payMeth").value=""; $("funds").value="";
+    $("srcIn").value=""; $("payMeth").value="";
+    $("funds").value=pick(OPTS.funds||[],DEFAULTS.funds);
     $("payStat").value=pick(OPTS.payStatus||[],DEFAULTS.payStatus);
     $("fulfil").value=pick(OPTS.fulfil||[],DEFAULTS.fulfil);
     $("packed").value=pick(OPTS.packed||[],DEFAULTS.packed);
