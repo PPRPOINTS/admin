@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#050507">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; connect-src https://script.google.com https://*.googleusercontent.com; style-src 'self' 'unsafe-inline'; font-src 'self'; script-src 'self' 'unsafe-inline'; img-src 'self' data:; form-action 'none'; base-uri 'none'">
+<title>Order Entry</title>
+<style>
+:root{
+  --bg:#050507; --rail:#0a0a0d; --card:#0e0e12; --card2:#14141a;
+  --bdr:#1e1e26; --bdr2:#2b2b36;
+  --txt:#f2f3f5; --dim:#8a8d94; --mut:#5b5e66;
+  --cyan:#22d3ee; --blue:#3b82f6; --purple:#8b5cf6;
+  --green:#2dd4a7; --red:#f87171; --amber:#fbbf24;
+  --rail-w:60px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,"Helvetica Neue",Arial,sans-serif;
+  background:var(--bg);color:var(--txt);min-height:100vh;line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:rgba(34,211,238,.25)}
+
+/* ---------- rail ---------- */
+.rail{position:fixed;left:0;top:0;bottom:0;width:var(--rail-w);background:var(--rail);border-right:1px solid var(--bdr);
+  display:flex;flex-direction:column;align-items:center;padding:14px 0;gap:6px;z-index:60}
+.rail-mark{width:34px;height:34px;border-radius:9px;background:linear-gradient(140deg,var(--blue),var(--cyan));
+  display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#04121a;margin-bottom:10px}
+.rail-i{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;color:var(--mut)}
+.rail-i.on{background:rgba(59,130,246,.16);color:var(--cyan)}
+.rail-i svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.rail-sp{flex:1}
+
+/* ---------- shell ---------- */
+.wrap{margin-left:var(--rail-w);padding:26px 26px 90px;max-width:1320px}
+.masthead{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  padding-bottom:20px;border-bottom:1px solid var(--bdr);margin-bottom:24px}
+.masthead h1{font-size:26px;font-weight:800;letter-spacing:-.3px;text-transform:uppercase}
+.masthead h1 b{color:var(--cyan);font-weight:800}
+.masthead .sub{font-size:13px;color:var(--dim);margin-top:3px}
+.mast-r{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.livewrap{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--dim);margin-right:4px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--green)}
+
+/* ---------- buttons ---------- */
+.btn{padding:9px 17px;border:none;border-radius:9px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;
+  transition:background .15s,color .15s,border-color .15s}
+.btn:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+.btn-p{background:var(--cyan);color:#052027}
+.btn-p:hover{background:#4ee0f5}
+.btn-p:disabled{background:var(--bdr2);color:var(--mut);cursor:not-allowed}
+.btn-s{background:var(--card2);border:1px solid var(--bdr2);color:var(--dim)}
+.btn-s:hover{background:#1b1b23;color:var(--txt)}
+.btn-d{background:transparent;border:1px solid var(--bdr2);color:var(--red)}
+.btn-d:hover{background:rgba(248,113,113,.1)}
+.btn-sm{font-size:12px;padding:7px 13px}
+.btn-ic{width:36px;padding:0;height:34px;display:inline-flex;align-items:center;justify-content:center}
+.btn-ic svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+/* ---------- fields ---------- */
+label{display:block;font-size:10.5px;font-weight:700;color:var(--dim);letter-spacing:.7px;text-transform:uppercase;margin-bottom:6px}
+input,select,textarea{width:100%;padding:10px 12px;background:#0a0a0e;border:1px solid var(--bdr);border-radius:9px;
+  color:var(--txt);font:inherit;font-size:14px;outline:none;transition:border-color .15s}
+input:hover,select:hover,textarea:hover{border-color:var(--bdr2)}
+input:focus,select:focus,textarea:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(34,211,238,.12)}
+input::placeholder{color:var(--mut)}
+select{cursor:pointer;appearance:none;padding-right:34px;
+  background-image:linear-gradient(45deg,transparent 50%,var(--dim) 50%),linear-gradient(135deg,var(--dim) 50%,transparent 50%);
+  background-position:calc(100% - 17px) 52%,calc(100% - 12px) 52%;background-size:5px 5px,5px 5px;background-repeat:no-repeat}
+option{background:#0e0e12;color:var(--txt)}
+textarea{resize:vertical;min-height:70px}
+input[type=number]{font-variant-numeric:tabular-nums}
+
+/* ---------- panels ---------- */
+.panel{background:var(--card);border:1px solid var(--bdr);border-radius:14px;padding:20px 20px 22px;margin-bottom:16px}
+.panel-h{display:flex;align-items:baseline;gap:11px;margin-bottom:3px;flex-wrap:wrap}
+.step{width:21px;height:21px;border-radius:50%;background:rgba(59,130,246,.16);color:var(--cyan);
+  font-size:11px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex:none;align-self:center}
+.panel-h h2{font-size:14.5px;font-weight:700;letter-spacing:.2px}
+.panel .hint{font-size:12.5px;color:var(--mut);margin:0 0 16px 32px}
+.grid{display:grid;gap:13px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(175px,1fr))}
+.g4{grid-template-columns:repeat(auto-fit,minmax(155px,1fr))}
+.echo{font-size:12.5px;color:var(--dim);margin-top:14px;padding:10px 13px;background:#0a0a0e;border:1px solid var(--bdr);border-radius:9px}
+.echo b{color:var(--cyan);font-weight:600}
+
+/* ---------- combo ---------- */
+.combo{position:relative}
+.combo-list{position:absolute;top:calc(100% + 5px);left:0;right:0;background:#101016;border:1px solid var(--bdr2);
+  border-radius:11px;max-height:262px;overflow-y:auto;z-index:50;display:none;box-shadow:0 18px 46px rgba(0,0,0,.72)}
+.combo-list.open{display:block}
+.combo-item{padding:10px 13px;cursor:pointer;font-size:13.5px;border-bottom:1px solid var(--bdr)}
+.combo-item:last-child{border-bottom:none}
+.combo-item:hover,.combo-item.hi{background:rgba(59,130,246,.13)}
+.combo-item small{display:block;color:var(--mut);font-size:11.5px;margin-top:2px;font-variant-numeric:tabular-nums}
+.combo-item.new{color:var(--green)}
+
+/* ---------- lines ---------- */
+.line{background:var(--card2);border:1px solid var(--bdr);border-radius:12px;padding:15px;margin-bottom:11px}
+.line-top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}
+.line-n{font-size:10.5px;font-weight:700;color:var(--mut);letter-spacing:.8px;text-transform:uppercase}
+.line-t{font-size:17px;font-weight:700;color:var(--green);font-variant-numeric:tabular-nums}
+.stock{font-size:11.5px;color:var(--mut);margin-top:7px}
+.stock.low{color:var(--amber)}
+.stock.out{color:var(--red)}
+
+/* ---------- summary bar ---------- */
+.sum{position:sticky;bottom:0;background:rgba(14,14,18,.97);backdrop-filter:blur(12px);
+  border:1px solid var(--bdr2);border-radius:14px;padding:17px 20px;margin-top:20px;
+  box-shadow:0 -14px 40px rgba(0,0,0,.6);display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.sum-rows{display:flex;gap:30px;flex-wrap:wrap;align-items:flex-end}
+.sum-i .l{font-size:10px;font-weight:700;color:var(--dim);letter-spacing:.8px;text-transform:uppercase;margin-bottom:4px}
+.sum-i .v{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
+.sum-i .v.big{font-size:30px;color:var(--green);letter-spacing:-.5px}
+.sum-act{display:flex;gap:9px;flex-wrap:wrap}
+
+/* ---------- preview ---------- */
+.scroll{overflow-x:auto;border:1px solid var(--bdr);border-radius:11px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{text-align:left;padding:9px 11px;font-size:9.5px;font-weight:700;color:var(--dim);letter-spacing:.7px;
+  text-transform:uppercase;background:#0a0a0e;border-bottom:1px solid var(--bdr);white-space:nowrap;position:sticky;top:0}
+th span{color:var(--cyan)}
+td{padding:9px 11px;border-bottom:1px solid var(--bdr);font-size:12px;white-space:nowrap;font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:none}
+.empty{color:var(--mut);font-size:13px;padding:22px;text-align:center}
+
+.pill{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700}
+.pill-g{background:rgba(45,212,167,.14);color:var(--green)}
+.pill-a{background:rgba(251,191,36,.14);color:var(--amber)}
+.pill-r{background:rgba(248,113,113,.14);color:var(--red)}
+.pill-b{background:rgba(59,130,246,.16);color:var(--cyan)}
+
+/* ---------- lock ---------- */
+.lock{max-width:410px;margin:13vh auto;background:var(--card);border:1px solid var(--bdr);border-radius:16px;padding:30px}
+.lock .badge{width:42px;height:42px;border-radius:11px;background:linear-gradient(140deg,var(--blue),var(--cyan));
+  display:flex;align-items:center;justify-content:center;margin-bottom:16px}
+.lock .badge svg{width:20px;height:20px;stroke:#04121a;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.lock h1{font-size:21px;font-weight:800;letter-spacing:-.2px;margin-bottom:5px}
+.lock p{font-size:13px;color:var(--dim);margin-bottom:20px}
+.lock .f{margin-bottom:13px}
+.err{color:var(--red);font-size:12.5px;margin-top:12px;display:none}
+.foot{font-size:11.5px;color:var(--mut);margin-top:14px;line-height:1.6}
+
+/* ---------- toast ---------- */
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:26px;background:#101016;border:1px solid var(--bdr2);
+  border-radius:11px;padding:14px 21px;font-size:13.5px;z-index:200;display:none;max-width:90vw;
+  box-shadow:0 18px 46px rgba(0,0,0,.72)}
+.toast.ok{border-color:var(--green);color:var(--green)}
+.toast.bad{border-color:var(--red);color:var(--red)}
+.toast.show{display:block}
+
+.hide{display:none!important}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@media(max-width:760px){
+  :root{--rail-w:0px}
+  .rail{display:none}
+  .wrap{padding:16px 14px 90px}
+  .masthead h1{font-size:21px}
+  .sum{padding:14px}
+  .sum-rows{gap:20px}
+  .sum-i .v.big{font-size:25px}
+  .panel .hint{margin-left:0}
+}
+</style>
+</head>
+<body>
+
+<!-- LOCK -->
+<div class="lock" id="lock">
+  <div class="badge"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+  <h1>Order entry</h1>
+  <p>Enter your access key to load the sheet.</p>
+  <div class="f"><label for="kIn">Access key</label>
+    <input type="password" id="kIn" autocomplete="off" spellcheck="false" placeholder="Paste key"></div>
+  <div class="f"><label for="uIn">Script URL</label>
+    <input type="text" id="uIn" autocomplete="off" spellcheck="false" placeholder="https://script.google.com/macros/s/.../exec"></div>
+  <button class="btn btn-p" style="width:100%;padding:12px" id="unlockBtn">Unlock</button>
+  <div class="err" id="lockErr"></div>
+  <p class="foot">Same password as the dashboard. If you are already connected there, this page skips this screen.</p>
+</div>
+
+<!-- RAIL -->
+<div class="rail hide" id="rail">
+  <div class="rail-mark">P</div>
+  <div class="rail-i on" title="Order entry"><svg viewBox="0 0 24 24"><path d="M9 11H5a2 2 0 0 0-2 2v7h18v-7a2 2 0 0 0-2-2h-4"/><path d="M12 3v11"/><path d="m8.5 7.5 3.5-4 3.5 4"/></svg></div>
+  <div class="rail-i" title="Customers"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/></svg></div>
+  <div class="rail-i" title="Products"><svg viewBox="0 0 24 24"><path d="M21 8V5a1 1 0 0 0-.6-.9l-7.8-3.4a2 2 0 0 0-1.2 0L3.6 4.1A1 1 0 0 0 3 5v14a1 1 0 0 0 .6.9l7.8 3.4a2 2 0 0 0 1.2 0"/><path d="M3.3 4.6 12 9l8.7-4.4"/><path d="M12 9v12"/></svg></div>
+  <div class="rail-sp"></div>
+  <div class="rail-i" title="Locked"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+</div>
+
+<!-- APP -->
+<div class="wrap hide" id="app">
+
+  <div class="masthead">
+    <div>
+      <h1>Order <b>Entry</b></h1>
+      <div class="sub" id="hdrSub">Loading</div>
+    </div>
+    <div class="mast-r">
+      <div class="livewrap"><span class="dot"></span><span>Connected</span></div>
+      <button class="btn btn-s btn-sm" id="reloadBtn">Reload sheet</button>
+      <button class="btn btn-s btn-ic" id="lockBtn" title="Lock" aria-label="Lock">
+        <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-h"><span class="step">1</span><h2>Customer</h2></div>
+    <div class="hint">Pick someone you've sold to before, or type a new name.</div>
+    <div class="grid g2">
+      <div class="combo" id="custCombo">
+        <label for="custIn">Name</label>
+        <input type="text" id="custIn" autocomplete="off" spellcheck="false" placeholder="Search or type a new name">
+        <div class="combo-list" id="custList"></div>
+      </div>
+      <div><label for="mobIn">Mobile</label><input type="tel" id="mobIn" autocomplete="off" placeholder="04..."></div>
+      <div><label for="refIn">Referred by</label><select id="refIn"></select></div>
+      <div><label for="srcIn">Where the lead came from</label><select id="srcIn"></select></div>
+    </div>
+    <div class="echo" id="nameOut"></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-h"><span class="step">2</span><h2>Products</h2></div>
+    <div class="hint">One row goes into the sheet for each product.</div>
+    <div id="lines"></div>
+    <button class="btn btn-s btn-sm" id="addLine">Add another product</button>
+  </div>
+
+  <div class="panel">
+    <div class="panel-h"><span class="step">3</span><h2>Money</h2></div>
+    <div class="hint">New orders default to unpaid. Just set how they're paying.</div>
+    <div class="grid g4">
+      <div><label for="payStat">Payment status</label><select id="payStat"></select></div>
+      <div><label for="payMeth">How it's being paid</label><select id="payMeth"></select></div>
+      <div><label for="funds">Where the funds live</label><select id="funds"></select></div>
+      <div><label for="payHit">Payment account hit</label><select id="payHit"></select></div>
+      <div><label for="credit">Credit used</label><input type="number" id="credit" step="0.01" min="0" placeholder="0.00"></div>
+    </div>
+    <div class="echo hide" id="cashNote"></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-h"><span class="step">4</span><h2>Fulfilment</h2></div>
+    <div class="hint">Leave these as they are for a fresh order.</div>
+    <div class="grid g4">
+      <div><label for="fulfil">Fulfilment status</label><select id="fulfil"></select></div>
+      <div><label for="packed">Packed yet</label><select id="packed"></select></div>
+      <div><label for="stockUp">Stock updated</label><select id="stockUp"></select></div>
+      <div><label for="freeVial">Free vial</label><select id="freeVial"></select></div>
+    </div>
+    <div style="margin-top:14px"><label for="notes">Notes</label>
+      <textarea id="notes" placeholder="Anything worth remembering about this order"></textarea></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-h"><span class="step">5</span><h2>What gets written</h2></div>
+    <div class="hint">Exactly these rows get appended to Customer_Orders.</div>
+    <div class="scroll"><table id="prevTbl"></table></div>
+  </div>
+
+  <div class="sum">
+    <div class="sum-rows">
+      <div class="sum-i"><div class="l">Lines</div><div class="v" id="sLines">0</div></div>
+      <div class="sum-i"><div class="l">Units</div><div class="v" id="sUnits">0</div></div>
+      <div class="sum-i"><div class="l">Order total</div><div class="v big" id="sTotal">$0.00</div></div>
+      <div class="sum-i"><div class="l">Status</div><div class="v" style="font-size:14px" id="sStat">Unpaid</div></div>
+    </div>
+    <div class="sum-act">
+      <button class="btn btn-p" id="submitBtn">Add order to sheet</button>
+      <button class="btn btn-s" id="copyBtn">Copy rows instead</button>
+      <button class="btn btn-d btn-sm" id="clearBtn">Clear</button>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+
+/* ---------- config ---------- */
+var CFG = {
+  ordersSheet: "Customer_Orders",
+  productsSheet: "Products",
+  contactsSheet: "Contacts"
+};
+
+/* field -> possible header names -> fallback column index (0 = A) */
+var FIELDS = [
+  {k:"orderDate", h:["Order Date","Date"],                                  c:0,  lbl:"Date"},
+  {k:"source",    h:["Source","Lead Source","Where From"],                  c:1,  lbl:"Source"},
+  {k:"customer",  h:["Customer Name","Customer","Name"],                    c:2,  lbl:"Customer"},
+  {k:"mobile",    h:["Mobile","Phone Number","Phone","Phone & Email"],       c:3,  lbl:"Mobile"},
+  {k:"sku",       h:["SKU","Product SKU"],                                  c:4,  lbl:"SKU"},
+  {k:"product",   h:["Product Name","Product"],                             c:5,  lbl:"Product"},
+  {k:"qty",       h:["Qty","Quantity","Qty Ordered"],                       c:6,  lbl:"Qty"},
+  {k:"unitPrice", h:["Unit Price","Unit Price ex GST (AUD)"],               c:7,  lbl:"Unit price"},
+  {k:"payStatus", h:["Payment Status"],                                     c:15, lbl:"Payment status"},
+  {k:"payMethod", h:["Payment Method"],                                     c:16, lbl:"Paid by"},
+  {k:"funds",     h:["Funds Holder","Where Funds Live","Funds"],            c:17, lbl:"Funds holder"},
+  {k:"fulfil",    h:["Fulfilment Status","Fulfillment Status"],             c:18, lbl:"Fulfilment"},
+  {k:"packed",    h:["Packed and ready?","Packed?","Packed"],               c:19, lbl:"Packed"},
+  {k:"stockUp",   h:["Stock Updated","Stock Updated?","Stock Adjusted"],    c:20, lbl:"Stock updated"},
+  {k:"payHit",    h:["Payment Hit","Payment Account Hit","Payment Received?","Funds Received"], c:21, lbl:"Payment hit"},
+  {k:"freeVial",  h:["Free Vial?","Free Vial"],                             c:22, lbl:"Free vial"},
+  {k:"credit",    h:["Credit Used ($)","Credit Used","Credit"],              c:23, lbl:"Credit used"},
+  {k:"notes",     h:["Notes","Note","Comments"],                            c:24, lbl:"Notes"}
+];
+
+/* used only if the sheet has no data validation and no history */
+var FALLBACK = {
+  source:    ["Instagram","Facebook","Referral","Word of Mouth","Repeat Customer","Website","Other"],
+  payStatus: ["Unpaid","Part Paid","Paid"],
+  payMethod: ["Bank Transfer","Cash","PayPal","Card","Crypto"],
+  funds:     ["Bank","PayPal","Cash","Max","Bon","Jord"],
+  fulfil:    ["Pending","Packed","Sent","Delivered","Cancelled"],
+  packed:    ["No","Yes"],
+  stockUp:   ["No","Yes"],
+  payHit:    ["No","Yes"],
+  freeVial:  ["No","Yes"]
+};
+
+var DEFAULTS = {payStatus:"Unpaid",fulfil:"Pending",packed:"No",stockUp:"No",payHit:"No",freeVial:"No"};
+
+/* ---------- state ---------- */
+var KEY = "", URL_ = "";
+var DATA = null, COLS = {}, WCOL = {}, OPTS = {}, PRODUCTS = [], CUSTOMERS = [], LINES = [];
+var lineSeq = 0, busy = false;
+
+/* ---------- helpers ---------- */
+function $(id){return document.getElementById(id);}
+function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+function num(s){if(s==null||s==="")return 0;var v=String(s).replace(/[$,\s%]/g,"").replace(/[\u2212\u2013]/g,"-");var n=parseFloat(v);return isNaN(n)?0:n;}
+function money(n){if(n==null||isNaN(n))return "$0.00";return "$"+Number(n).toLocaleString("en-AU",{minimumFractionDigits:2,maximumFractionDigits:2});}
+function today(){var d=new Date();return String(d.getDate()).padStart(2,"0")+"/"+String(d.getMonth()+1).padStart(2,"0")+"/"+d.getFullYear();}
+function uniq(a){var s=[],seen={};for(var i=0;i<a.length;i++){var v=String(a[i]==null?"":a[i]).trim();if(!v||seen[v.toLowerCase()])continue;seen[v.toLowerCase()]=1;s.push(v);}return s;}
+function colLetter(i){var s="";i=i+1;while(i>0){var m=(i-1)%26;s=String.fromCharCode(65+m)+s;i=Math.floor((i-m)/26);}return s;}
+
+var toastT=null;
+function toast(msg,kind){
+  var t=$("toast");t.textContent=msg;t.className="toast show "+(kind||"");
+  clearTimeout(toastT);toastT=setTimeout(function(){t.className="toast";},kind==="bad"?7000:3800);
+}
+
+/* ---------- unlock ---------- */
+function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+function lsSet(k,v){ try{ localStorage.setItem(k,v); return true; }catch(e){ return false; } }
+
+(function initLock(){
+  /* The dashboard saves its connection under these keys. Same site, same storage,
+     so if you are already connected over there this page just works. */
+  var savedUrl = lsGet("peps-script-url") || sessionStorage.getItem("oe-url") || "";
+  var savedKey = lsGet("peps-script-key") || sessionStorage.getItem("oe-key") || "";
+  $("uIn").value = savedUrl;
+  if(savedKey && savedUrl){ KEY=savedKey; URL_=savedUrl; start(); }
+  $("unlockBtn").addEventListener("click", doUnlock);
+  $("kIn").addEventListener("keydown", function(e){ if(e.key==="Enter") doUnlock(); });
+  $("uIn").addEventListener("keydown", function(e){ if(e.key==="Enter") doUnlock(); });
+})();
+
+function doUnlock(){
+  var k = $("kIn").value.trim(), u = $("uIn").value.trim();
+  if(!k || !u){ showLockErr("Key and script URL are both needed."); return; }
+  if(u.indexOf("https://script.google.com/") !== 0){ showLockErr("That doesn't look like an Apps Script URL."); return; }
+  KEY=k; URL_=u;
+  sessionStorage.setItem("oe-key",k);
+  sessionStorage.setItem("oe-url",u);
+  lsSet("peps-script-url",u);
+  lsSet("peps-script-key",k);
+  $("kIn").value="";
+  start();
+}
+function showLockErr(m){var e=$("lockErr");e.textContent=m;e.style.display="block";}
+
+function lockUp(){
+  sessionStorage.removeItem("oe-key");
+  try{ localStorage.removeItem("peps-script-key"); }catch(e){}
+  KEY=""; DATA=null;
+  $("app").classList.add("hide");
+  $("rail").classList.add("hide");
+  $("lock").classList.remove("hide");
+  $("lockErr").style.display="none";
+}
+
+/* ---------- load ---------- */
+function start(){
+  $("lock").classList.add("hide");
+  $("app").classList.remove("hide");
+  $("rail").classList.remove("hide");
+  $("hdrSub").textContent = "Loading sheet";
+  loadData();
+}
+
+function apiUrl(){ return URL_ + (URL_.indexOf("?")>=0?"&":"?") + "key=" + encodeURIComponent(KEY) + "&t=" + Date.now(); }
+
+function loadData(){
+  fetch(apiUrl(), {method:"GET", redirect:"follow"})
+    .then(function(r){ return r.json(); })
+    .then(function(j){
+      if(j && j.error){ throw new Error(j.error); }
+      DATA = j;
+      build();
+    })
+    .catch(function(err){
+      $("hdrSub").textContent = "Couldn't load the sheet";
+      toast("Load failed. Check the key and that the script is deployed to anyone with the link. " + err.message, "bad");
+    });
+}
+
+/* ---------- build ---------- */
+function build(){
+  var orders = DATA[CFG.ordersSheet] || [];
+  var hdrRow = findHeaderRow(orders);
+  var headers = hdrRow >= 0 ? orders[hdrRow] : [];
+
+  /* Two different maps, and mixing them up would put data in the wrong column.
+     COLS  = where a field sits in the data we were sent (some columns are stripped out).
+             Used for reading history and building the dropdown lists.
+     WCOL  = the real header name and real column in the sheet. Used for writing. */
+  COLS = {}; WCOL = {};
+  var lower = headers.map(function(h){ return String(h==null?"":h).trim().toLowerCase(); });
+  var real = DATA._orderCols || null;
+  var realLower = {};
+  if(real) for(var rk in real) realLower[rk.trim().toLowerCase()] = {name:rk, idx:real[rk]};
+
+  FIELDS.forEach(function(f){
+    var idx = -1;
+    for(var i=0;i<f.h.length && idx<0;i++) idx = lower.indexOf(f.h[i].trim().toLowerCase());
+    COLS[f.k] = idx >= 0 ? idx : f.c;
+
+    var w = null;
+    for(var j=0;j<f.h.length && !w;j++) w = realLower[f.h[j].trim().toLowerCase()] || null;
+    WCOL[f.k] = w;   // null means the sheet has no such header, so we never write it
+  });
+
+  /* dropdown options: sheet validation > history > fallback */
+  var v = (DATA._validation && DATA._validation[CFG.ordersSheet]) || {};
+  OPTS = {};
+  ["source","payStatus","payMethod","funds","fulfil","packed","stockUp","payHit","freeVial"].forEach(function(k){
+    var fromValidation = (WCOL[k] ? (v[String(WCOL[k].idx)] || []) : []);
+    var fromHistory = [];
+    for(var i=hdrRow+1;i<orders.length;i++){
+      var r=orders[i]; if(!r) continue;
+      var cell=r[COLS[k]]; if(cell!=null && String(cell).trim()) fromHistory.push(cell);
+    }
+    var merged = uniq(fromValidation.concat(uniq(fromHistory)));
+    if(!merged.length) merged = FALLBACK[k].slice();
+    OPTS[k] = merged;
+  });
+
+  /* products */
+  var prod = DATA[CFG.productsSheet] || [];
+  var pH = -1;
+  for(var i=0;i<prod.length;i++){ if(prod[i] && String(prod[i][0]||"").trim().toUpperCase()==="SKU"){ pH=i; break; } }
+  var pm = {};
+  if(pH>=0) prod[pH].forEach(function(h,ix){ var k=String(h==null?"":h).trim(); if(k) pm[k]=ix; });
+  function pv(r,names){ for(var i=0;i<names.length;i++){ if(pm[names[i]]!=null && r[pm[names[i]]]!=null && String(r[pm[names[i]]]).trim()!=="") return r[pm[names[i]]]; } return ""; }
+  PRODUCTS = [];
+  for(var i=pH+1;i<prod.length;i++){
+    var r=prod[i]; if(!r || !String(r[0]||"").trim()) continue;
+    var status = String(pv(r,["Status"])||"").trim();
+    PRODUCTS.push({
+      sku: String(r[pm.SKU!=null?pm.SKU:0]||"").trim(),
+      name: String(pv(r,["Product","Product Name"])||"").trim(),
+      net: num(pv(r,["Customer Cost","Net Price ","Net Price","Net Price ex GST (AUD)"])),
+      cash: num(pv(r,[" Cash Price ","Cash Price ","Cash Price"])),
+      onHand: num(pv(r,["On Hand","Total Units"])),
+      status: status
+    });
+  }
+  PRODUCTS = PRODUCTS.filter(function(p){ return p.sku; });
+  PRODUCTS.sort(function(a,b){
+    var as = a.status.toLowerCase()==="active"?0:1, bs = b.status.toLowerCase()==="active"?0:1;
+    if(as!==bs) return as-bs;
+    return a.name.localeCompare(b.name);
+  });
+
+  /* customers: contacts tab first, then order history */
+  var map = {};
+  var con = DATA[CFG.contactsSheet] || [];
+  if(con.length){
+    var cH=-1, cm={};
+    for(var i=0;i<con.length;i++){
+      var row=con[i]; if(!row) continue;
+      var joined=row.map(function(x){return String(x==null?"":x).trim().toLowerCase();});
+      if(joined.indexOf("name")>=0 || joined.indexOf("customer name")>=0){ cH=i; break; }
+    }
+    if(cH>=0){
+      con[cH].forEach(function(h,ix){ var k=String(h==null?"":h).trim().toLowerCase(); if(k) cm[k]=ix; });
+      var nIx = cm["name"]!=null?cm["name"]:(cm["customer name"]!=null?cm["customer name"]:0);
+      var mIx = cm["mobile"]!=null?cm["mobile"]:(cm["phone"]!=null?cm["phone"]:(cm["phone number"]!=null?cm["phone number"]:1));
+      for(var i=cH+1;i<con.length;i++){
+        var row=con[i]; if(!row) continue;
+        var nm=String(row[nIx]||"").trim(); if(!nm) continue;
+        map[nm.toLowerCase()] = {name:nm, mobile:String(row[mIx]||"").trim(), source:"", orders:0, from:"contacts"};
+      }
+    }
+  }
+  for(var i=hdrRow+1;i<orders.length;i++){
+    var r=orders[i]; if(!r) continue;
+    var nm = String(r[COLS.customer]||"").trim(); if(!nm) continue;
+    var base = nm.split(/\s+via\s+/i)[0].trim();
+    var k = base.toLowerCase();
+    if(!map[k]) map[k] = {name:base, mobile:"", source:"", orders:0, from:"orders"};
+    map[k].orders++;
+    var mob = String(r[COLS.mobile]||"").trim();
+    if(mob && !map[k].mobile) map[k].mobile = mob;
+    var src = String(r[COLS.source]||"").trim();
+    if(src) map[k].source = src;
+  }
+  CUSTOMERS = Object.keys(map).map(function(k){ return map[k]; })
+    .sort(function(a,b){ return b.orders - a.orders || a.name.localeCompare(b.name); });
+
+  /* fill selects */
+  fillSel("srcIn", OPTS.source, "", true);
+  fillSel("payStat", OPTS.payStatus, pick(OPTS.payStatus, DEFAULTS.payStatus));
+  fillSel("payMeth", OPTS.payMethod, "", true);
+  fillSel("funds", OPTS.funds, "", true);
+  fillSel("payHit", OPTS.payHit, pick(OPTS.payHit, DEFAULTS.payHit));
+  fillSel("fulfil", OPTS.fulfil, pick(OPTS.fulfil, DEFAULTS.fulfil));
+  fillSel("packed", OPTS.packed, pick(OPTS.packed, DEFAULTS.packed));
+  fillSel("stockUp", OPTS.stockUp, pick(OPTS.stockUp, DEFAULTS.stockUp));
+  fillSel("freeVial", OPTS.freeVial, pick(OPTS.freeVial, DEFAULTS.freeVial));
+  fillSel("refIn", CUSTOMERS.map(function(c){return c.name;}), "", true, "No referral");
+
+  /* safety: never write two fields into the same cell, and never guess a column */
+  var used = {}, clash = [], unmatched = [];
+  FIELDS.forEach(function(f){
+    var w = WCOL[f.k];
+    if(!w){ unmatched.push(f.lbl); return; }
+    if(used[w.idx]) clash.push(colLetter(w.idx)+" "+used[w.idx]+" vs "+f.lbl);
+    else used[w.idx] = f.lbl;
+  });
+
+  $("hdrSub").textContent = PRODUCTS.length + " products · " + CUSTOMERS.length + " customers · writing to " + CFG.ordersSheet;
+  if(!DATA._orderCols){
+    toast("The script did not send the sheet's real columns. Update the Apps Script before adding orders.", "bad");
+    $("hdrSub").textContent += " · script needs updating";
+  } else if(clash.length){
+    toast("Two fields point at the same column: " + clash.join(", ") + ". Fix the header names first.", "bad");
+    $("hdrSub").textContent += " · column clash";
+  } else if(unmatched.length){
+    $("hdrSub").textContent += " · " + unmatched.length + " field" + (unmatched.length>1?"s":"") + " not on the sheet";
+    $("hdrSub").title = "No matching header, will be left blank: " + unmatched.join(", ");
+  }
+
+  if(!LINES.length) addLine();
+  render();
+}
+
+function pick(list, want){
+  for(var i=0;i<list.length;i++){ if(String(list[i]).trim().toLowerCase()===want.toLowerCase()) return list[i]; }
+  return list[0]||want;
+}
+
+function findHeaderRow(rows){
+  for(var i=0;i<Math.min(rows.length,15);i++){
+    var r=rows[i]; if(!r) continue;
+    for(var j=0;j<r.length;j++){
+      var c=String(r[j]==null?"":r[j]).trim().toLowerCase();
+      if(c==="order date"||c==="customer name") return i;
+    }
+  }
+  return 0;
+}
+
+function fillSel(id, list, sel, blankFirst, blankLabel){
+  var el=$(id); if(!el) return;
+  var html = blankFirst ? '<option value="">'+esc(blankLabel||"Choose")+'</option>' : "";
+  list.forEach(function(o){
+    html += '<option value="'+esc(o)+'"'+(String(o)===String(sel)?" selected":"")+'>'+esc(o)+'</option>';
+  });
+  el.innerHTML = html;
+}
+
+/* ---------- customer combo ---------- */
+var comboHi = -1, comboItems = [];
+function renderCombo(){
+  var q = $("custIn").value.trim().toLowerCase();
+  var list = CUSTOMERS.filter(function(c){ return !q || c.name.toLowerCase().indexOf(q)>=0; }).slice(0,40);
+  comboItems = list;
+  var html = "";
+  if(q && !CUSTOMERS.some(function(c){ return c.name.toLowerCase()===q; })){
+    html += '<div class="combo-item new" data-new="1">Add new customer: '+esc($("custIn").value.trim())+'</div>';
+  }
+  list.forEach(function(c,i){
+    html += '<div class="combo-item" data-i="'+i+'">'+esc(c.name)+
+            '<small>'+esc(c.mobile||"no number")+(c.orders?"  ·  "+c.orders+" order"+(c.orders>1?"s":""):"")+'</small></div>';
+  });
+  if(!html) html = '<div class="combo-item" style="color:var(--mut)">Nothing matches. Keep typing to add a new customer.</div>';
+  $("custList").innerHTML = html;
+  $("custList").classList.add("open");
+  comboHi = -1;
+}
+function closeCombo(){ $("custList").classList.remove("open"); }
+
+function selectCustomer(c){
+  $("custIn").value = c.name;
+  if(c.mobile) $("mobIn").value = c.mobile;
+  if(c.source){
+    var s=$("srcIn");
+    for(var i=0;i<s.options.length;i++){ if(s.options[i].value===c.source){ s.value=c.source; break; } }
+  }
+  closeCombo(); render();
+}
+
+/* ---------- lines ---------- */
+function addLine(){
+  LINES.push({id:++lineSeq, sku:"", qty:1, price:0, manual:false});
+  renderLines(); render();
+}
+function removeLine(id){
+  LINES = LINES.filter(function(l){ return l.id!==id; });
+  if(!LINES.length) addLine(); else { renderLines(); render(); }
+}
+function priceFor(sku){
+  var p = PRODUCTS.filter(function(x){ return x.sku===sku; })[0];
+  if(!p) return 0;
+  var cash = String($("payMeth").value||"").toLowerCase().indexOf("cash")>=0;
+  if(cash && p.cash>0) return p.cash;
+  return p.net||0;
+}
+function renderLines(){
+  var html="";
+  LINES.forEach(function(l,ix){
+    var p = PRODUCTS.filter(function(x){ return x.sku===l.sku; })[0];
+    var stockTxt="", stockCls="";
+    if(p){
+      var left = p.onHand - l.qty;
+      stockTxt = p.onHand + " on hand, " + left + " left after this";
+      if(p.onHand<=0){ stockCls="out"; stockTxt = "none on hand"; }
+      else if(left<0){ stockCls="out"; stockTxt = "only " + p.onHand + " on hand, short by " + Math.abs(left); }
+      else if(left<=2){ stockCls="low"; }
+    }
+    html += '<div class="line">'+
+      '<div class="line-top"><span class="line-n">Product '+(ix+1)+'</span>'+
+      '<span style="display:flex;gap:10px;align-items:center"><span class="line-t">'+money(l.qty*l.price)+'</span>'+
+      (LINES.length>1?'<button class="btn btn-d btn-sm" data-del="'+l.id+'">Remove</button>':'')+'</span></div>'+
+      '<div class="grid g3">'+
+        '<div style="grid-column:span 2;min-width:200px"><label>Product</label>'+
+          '<select data-sku="'+l.id+'"><option value="">Choose a product</option>'+
+          PRODUCTS.map(function(pr){
+            return '<option value="'+esc(pr.sku)+'"'+(pr.sku===l.sku?" selected":"")+'>'+esc(pr.name||pr.sku)+
+                   (pr.status && pr.status.toLowerCase()!=="active"?" ("+esc(pr.status)+")":"")+'</option>';
+          }).join("")+'</select>'+
+          (stockTxt?'<div class="stock '+stockCls+'">'+esc(stockTxt)+'</div>':'')+
+        '</div>'+
+        '<div><label>Qty</label><input type="number" min="1" step="1" value="'+l.qty+'" data-qty="'+l.id+'"></div>'+
+        '<div><label>Unit price</label><input type="number" min="0" step="0.01" value="'+(l.price||"")+'" data-price="'+l.id+'"></div>'+
+      '</div></div>';
+  });
+  $("lines").innerHTML = html;
+}
+
+/* ---------- compute ---------- */
+function customerName(){
+  var base = $("custIn").value.trim();
+  var ref = $("refIn").value.trim();
+  if(base && ref && ref.toLowerCase()!==base.toLowerCase()) return base + " via " + ref;
+  return base;
+}
+function validLines(){
+  return LINES.filter(function(l){ return l.sku && l.qty>0; });
+}
+function buildRows(){
+  var name = customerName();
+  var p0 = {};
+  p0.orderDate = today();
+  p0.source    = $("srcIn").value;
+  p0.customer  = name;
+  p0.mobile    = $("mobIn").value.trim();
+  p0.payStatus = $("payStat").value;
+  p0.payMethod = $("payMeth").value;
+  p0.funds     = $("funds").value;
+  p0.fulfil    = $("fulfil").value;
+  p0.packed    = $("packed").value;
+  p0.stockUp   = $("stockUp").value;
+  p0.payHit    = $("payHit").value;
+  p0.freeVial  = $("freeVial").value;
+  p0.credit    = $("credit").value.trim()==="" ? "" : num($("credit").value);
+  p0.notes     = $("notes").value.trim();
+
+  return validLines().map(function(l){
+    var prod = PRODUCTS.filter(function(x){ return x.sku===l.sku; })[0] || {};
+    var v = {};
+    for(var k in p0) v[k] = p0[k];
+    v.sku = l.sku;
+    v.product = prod.name || "";
+    v.qty = l.qty;
+    v.unitPrice = l.price;
+
+    /* keyed by the sheet's own header name, so a moved column can never misfile it */
+    var fields = {}, cells = {};
+    FIELDS.forEach(function(f){
+      var w = WCOL[f.k];
+      if(!w) return;
+      if(v[f.k] === undefined) return;
+      fields[w.name] = v[f.k];
+      cells[w.idx] = v[f.k];
+    });
+    return {fields: fields, cells: cells};
+  });
+}
+
+function render(){
+  renderLines();
+  var vl = validLines();
+  var units = vl.reduce(function(s,l){ return s + l.qty; }, 0);
+  var total = vl.reduce(function(s,l){ return s + l.qty*l.price; }, 0);
+  $("sLines").textContent = vl.length;
+  $("sUnits").textContent = units;
+  $("sTotal").textContent = money(total);
+  var st = $("payStat").value || "Unpaid";
+  $("sStat").innerHTML = '<span class="pill '+(st.toLowerCase()==="paid"?"pill-g":(st.toLowerCase().indexOf("part")>=0?"pill-a":"pill-r"))+'">'+esc(st)+'</span>';
+
+  var nm = customerName();
+  $("nameOut").innerHTML = nm
+    ? 'Goes into the sheet as <b>' + esc(nm) + '</b>'
+    : 'Pick a customer from the list or type a new name.';
+
+  var cash = String($("payMeth").value||"").toLowerCase().indexOf("cash")>=0;
+  var cn = $("cashNote");
+  cn.classList.toggle("hide", !cash);
+  if(cash) cn.innerHTML = 'Cash selected, so prices pulled the <b>cash price</b> where the product has one.';
+
+  /* preview */
+  var rows = buildRows();
+  if(!rows.length){
+    $("prevTbl").innerHTML = '<tr><td class="empty">Pick a product and the exact rows show up here.</td></tr>';
+  } else {
+    var shown = FIELDS.filter(function(f){ return WCOL[f.k]; })
+                      .sort(function(a,b){ return WCOL[a.k].idx - WCOL[b.k].idx; });
+    var head = "<tr>" + shown.map(function(f){
+      return "<th><span>"+esc(colLetter(WCOL[f.k].idx))+"</span> "+esc(f.lbl)+"</th>";
+    }).join("") + "</tr>";
+    var body = rows.map(function(r){
+      return "<tr>" + shown.map(function(f){
+        var v = r.cells[WCOL[f.k].idx];
+        return "<td>"+esc(v===""||v==null?"—":v)+"</td>";
+      }).join("") + "</tr>";
+    }).join("");
+    $("prevTbl").innerHTML = head + body;
+  }
+
+  var ready = rows.length>0 && customerName();
+  $("submitBtn").disabled = !ready || busy;
+  $("submitBtn").textContent = busy ? "Adding" : ("Add order to sheet" + (rows.length>1?" ("+rows.length+" rows)":""));
+}
+
+/* ---------- submit ---------- */
+function submitOrder(){
+  if(busy) return;
+  var rows = buildRows();
+  if(!rows.length || !customerName()){ toast("Need a customer and at least one product.","bad"); return; }
+
+  var short = validLines().filter(function(l){
+    var p = PRODUCTS.filter(function(x){ return x.sku===l.sku; })[0];
+    return p && p.onHand - l.qty < 0;
+  });
+  if(short.length && !confirm("Not enough stock on hand for "+short.length+" line(s). Add the order anyway?")) return;
+
+  busy = true; render();
+  var payload = {
+    key: KEY,
+    action: "addOrder",
+    sheet: CFG.ordersSheet,
+    ref: "OE-" + Date.now() + "-" + Math.random().toString(36).slice(2,8),
+    rows: rows.map(function(r){ return {fields: r.fields}; })
+  };
+
+  fetch(URL_, {
+    method: "POST",
+    redirect: "follow",
+    headers: {"Content-Type":"text/plain;charset=utf-8"},
+    body: JSON.stringify(payload)
+  })
+  .then(function(r){ return r.text(); })
+  .then(function(txt){
+    var j = null;
+    try { j = JSON.parse(txt); } catch(e){}
+    if(j && j.ok){
+      toast("Added "+j.added+" row"+(j.added>1?"s":"")+" to the sheet.","ok");
+      clearForm(true);
+      loadData();
+    } else if(j && j.error){
+      toast("Sheet said no: "+j.error,"bad");
+    } else {
+      toast("Sent, but the sheet didn't confirm. Check Customer_Orders before sending again.","bad");
+    }
+  })
+  .catch(function(err){
+    toast("Couldn't reach the script: "+err.message+". Use Copy rows and paste it in.","bad");
+  })
+  .finally(function(){ busy = false; render(); });
+}
+
+function copyRows(){
+  var rows = buildRows();
+  if(!rows.length){ toast("Nothing to copy yet.","bad"); return; }
+  var maxIx = 0;
+  FIELDS.forEach(function(f){ if(WCOL[f.k] && WCOL[f.k].idx>maxIx) maxIx = WCOL[f.k].idx; });
+  var tsv = rows.map(function(r){
+    var arr=[];
+    for(var i=0;i<=maxIx;i++){ var v=r.cells[i]; arr.push(v===undefined||v===null?"":String(v)); }
+    return arr.join("\t");
+  }).join("\n");
+  navigator.clipboard.writeText(tsv).then(function(){
+    toast("Rows copied. Click cell A on the next empty row in Customer_Orders and paste.","ok");
+  }).catch(function(){
+    window.prompt("Copy this and paste into the sheet:", tsv);
+  });
+}
+
+function clearForm(keepSettings){
+  $("custIn").value=""; $("mobIn").value=""; $("refIn").value=""; $("notes").value=""; $("credit").value="";
+  LINES = []; lineSeq = 0; addLine();
+  if(!keepSettings){
+    $("srcIn").value=""; $("payMeth").value=""; $("funds").value="";
+    $("payStat").value = pick(OPTS.payStatus||[], DEFAULTS.payStatus);
+    $("fulfil").value  = pick(OPTS.fulfil||[], DEFAULTS.fulfil);
+    $("packed").value  = pick(OPTS.packed||[], DEFAULTS.packed);
+    $("stockUp").value = pick(OPTS.stockUp||[], DEFAULTS.stockUp);
+    $("payHit").value  = pick(OPTS.payHit||[], DEFAULTS.payHit);
+    $("freeVial").value= pick(OPTS.freeVial||[], DEFAULTS.freeVial);
+  }
+  render();
+}
+
+/* ---------- events ---------- */
+$("custIn").addEventListener("input", function(){ renderCombo(); render(); });
+$("custIn").addEventListener("focus", renderCombo);
+$("custIn").addEventListener("keydown", function(e){
+  var items = $("custList").querySelectorAll(".combo-item");
+  if(e.key==="ArrowDown"||e.key==="ArrowUp"){
+    e.preventDefault();
+    if(!items.length) return;
+    comboHi += (e.key==="ArrowDown"?1:-1);
+    if(comboHi<0) comboHi=items.length-1;
+    if(comboHi>=items.length) comboHi=0;
+    items.forEach(function(el,i){ el.classList.toggle("hi", i===comboHi); });
+    items[comboHi].scrollIntoView({block:"nearest"});
+  } else if(e.key==="Enter"){
+    if(comboHi>=0 && items[comboHi]){ e.preventDefault(); items[comboHi].click(); }
+    else closeCombo();
+  } else if(e.key==="Escape"){ closeCombo(); }
+});
+$("custList").addEventListener("click", function(e){
+  var it = e.target.closest(".combo-item"); if(!it) return;
+  if(it.dataset.new){ closeCombo(); render(); return; }
+  var i = parseInt(it.dataset.i,10);
+  if(!isNaN(i) && comboItems[i]) selectCustomer(comboItems[i]);
+});
+document.addEventListener("click", function(e){
+  if(!e.target.closest("#custCombo")) closeCombo();
+});
+
+$("lines").addEventListener("change", function(e){
+  var t=e.target;
+  if(t.dataset.sku){
+    var l = LINES.filter(function(x){ return x.id==t.dataset.sku; })[0];
+    if(l){ l.sku=t.value; if(!l.manual) l.price = priceFor(t.value); }
+    render();
+  } else if(t.dataset.qty){
+    var l2 = LINES.filter(function(x){ return x.id==t.dataset.qty; })[0];
+    if(l2) l2.qty = Math.max(1, parseInt(t.value,10)||1);
+    render();
+  } else if(t.dataset.price){
+    var l3 = LINES.filter(function(x){ return x.id==t.dataset.price; })[0];
+    if(l3){ l3.price = num(t.value); l3.manual = true; }
+    render();
+  }
+});
+$("lines").addEventListener("click", function(e){
+  var b = e.target.closest("[data-del]"); if(!b) return;
+  removeLine(parseInt(b.dataset.del,10));
+});
+$("addLine").addEventListener("click", addLine);
+$("payMeth").addEventListener("change", function(){
+  LINES.forEach(function(l){ if(l.sku && !l.manual) l.price = priceFor(l.sku); });
+  render();
+});
+["srcIn","refIn","payStat","funds","payHit","fulfil","packed","stockUp","freeVial","credit","notes","mobIn"]
+  .forEach(function(id){ $(id).addEventListener("input", render); $(id).addEventListener("change", render); });
+
+$("submitBtn").addEventListener("click", submitOrder);
+$("copyBtn").addEventListener("click", copyRows);
+$("clearBtn").addEventListener("click", function(){ if(confirm("Clear the form?")) clearForm(false); });
+$("reloadBtn").addEventListener("click", function(){ $("hdrSub").textContent="Reloading"; loadData(); });
+$("lockBtn").addEventListener("click", lockUp);
+window.addEventListener("beforeunload", function(e){
+  if(validLines().length && customerName()){ e.preventDefault(); e.returnValue=""; }
+});
+</script></body>
+</html>
