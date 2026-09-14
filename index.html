@@ -176,13 +176,16 @@ tr:last-child td{border-bottom:none}
   <div class="badge"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
   <h1>Order entry</h1>
   <p>Enter your access key to load the sheet.</p>
-  <div class="f"><label for="kIn">Access key</label>
-    <input type="password" id="kIn" autocomplete="off" spellcheck="false" placeholder="Paste key"></div>
-  <div class="f"><label for="uIn">Script URL</label>
-    <input type="text" id="uIn" autocomplete="off" spellcheck="false" placeholder="https://script.google.com/macros/s/.../exec"></div>
-  <button class="btn btn-p" style="width:100%;padding:12px" id="unlockBtn">Unlock</button>
+  <div id="storeWarn" style="display:none;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.45);color:#fbbf24;border-radius:10px;padding:10px 12px;font-size:12.5px;line-height:1.45;margin-bottom:14px;text-align:left"></div>
+  <form id="lockForm" autocomplete="on" action="#" style="margin:0">
+    <div class="f"><label for="uIn">Script URL</label>
+      <input type="text" id="uIn" name="username" autocomplete="username" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="https://script.google.com/macros/s/.../exec"></div>
+    <div class="f"><label for="kIn">Access key</label>
+      <input type="password" id="kIn" name="password" autocomplete="current-password" spellcheck="false" placeholder="Paste key"></div>
+    <button class="btn btn-p" style="width:100%;padding:12px" id="unlockBtn" type="submit">Unlock</button>
+  </form>
   <div class="err" id="lockErr"></div>
-  <p class="foot">Same password as the dashboard. If you are already connected there, this page skips this screen.</p>
+  <p class="foot">Same password as the dashboard. If you are already connected there, this page skips this screen.<br><span id="saveHint" style="display:none">Tip: let your phone save this, then it fills both fields in one tap.</span></p>
 </div>
 
 <!-- RAIL -->
@@ -221,7 +224,7 @@ tr:last-child td{border-bottom:none}
         <div class="combo-list" id="custList"></div>
       </div>
       <div><label for="mobIn">Mobile</label><input type="tel" id="mobIn" autocomplete="off" placeholder="04..."></div>
-      <div><label for="refIn">Referred by</label><input type="text" id="refIn" list="refList" autocomplete="off" spellcheck="false" placeholder="Pick one or type a new partner"><datalist id="refList"></datalist></div>
+      <div class="combo" id="refCombo"><label for="refIn">Referred by</label><input type="text" id="refIn" autocomplete="off" spellcheck="false" placeholder="Search who referred them, or type a new partner"><div class="combo-list" id="refList"></div></div>
       <div><label for="srcIn">Where the lead came from</label><select id="srcIn"></select></div>
     </div>
     <div class="echo" id="nameOut"></div>
@@ -344,6 +347,19 @@ function today(){var d=new Date();return String(d.getDate()).padStart(2,"0")+"/"
 function uniq(a){var o=[],seen={};for(var i=0;i<a.length;i++){var v=String(a[i]==null?"":a[i]).trim();if(!v||seen[v.toLowerCase()])continue;seen[v.toLowerCase()]=1;o.push(v);}return o;}
 function colLetter(i){var s="";i=i+1;while(i>0){var m=(i-1)%26;s=String.fromCharCode(65+m)+s;i=Math.floor((i-m)/26);}return s;}
 function lsGet(k){try{return localStorage.getItem(k);}catch(e){return null;}}
+/* Does this browser actually keep what we save? Private tabs and blocked site data
+   both fail here, and iOS also wipes stored data for any site untouched for 7 days. */
+function storageOK(){try{localStorage.setItem("__probe","1");var v=localStorage.getItem("__probe");localStorage.removeItem("__probe");return v==="1";}catch(e){return false;}}
+function showStoreWarn(m){var e=$("storeWarn");if(!e)return;e.innerHTML=m;e.style.display="block";}
+function bannerWarn(m){
+  var b=document.getElementById("topWarn");
+  if(!b){b=document.createElement("div");b.id="topWarn";
+    b.style.cssText="position:fixed;left:0;right:0;top:0;z-index:9999;background:#78350f;color:#fde68a;font-size:12.5px;line-height:1.4;padding:9px 14px;text-align:center;box-shadow:0 2px 14px rgba(0,0,0,.5)";
+    b.addEventListener("click",function(){b.remove();try{document.body.style.paddingTop="";}catch(e){}});
+    document.body.appendChild(b);}
+  b.innerHTML=m+' <span style="opacity:.7">tap to dismiss</span>';
+  try{ document.body.style.paddingTop=b.offsetHeight+"px"; }catch(e){}
+}
 function lsSet(k,v){try{localStorage.setItem(k,v);return true;}catch(e){return false;}}
 
 var toastT=null;
@@ -368,9 +384,12 @@ function baseName(full){
   var savedKey = lsGet("peps-script-key") || "";
   $("uIn").value = savedUrl;
   if(savedKey && savedUrl){ KEY=savedKey; URL_=savedUrl; start(); }
-  $("unlockBtn").addEventListener("click", doUnlock);
-  $("kIn").addEventListener("keydown", function(e){ if(e.key==="Enter") doUnlock(); });
-  $("uIn").addEventListener("keydown", function(e){ if(e.key==="Enter") doUnlock(); });
+  $("lockForm").addEventListener("submit", function(e){ e.preventDefault(); doUnlock(); });
+  if(!storageOK()){
+    showStoreWarn("This browser will not remember your login.<br>You are either in a private tab, or cookies and site data are switched off for this site. Fix that and it will stick.");
+  }else{
+    var hint=$("saveHint"); if(hint) hint.style.display="inline";
+  }
 })();
 
 function doUnlock(){
@@ -378,8 +397,9 @@ function doUnlock(){
   if(!k||!u){ showLockErr("Key and script URL are both needed."); return; }
   if(u.indexOf("https://script.google.com/")!==0){ showLockErr("That does not look like an Apps Script URL."); return; }
   KEY=k; URL_=u;
-  lsSet("peps-script-url",u); lsSet("peps-script-key",k);
-  $("kIn").value="";
+  var okU=lsSet("peps-script-url",u), okK=lsSet("peps-script-key",k);
+  if(window.__credStore)window.__credStore(u,k);
+  if(!okU||!okK) bannerWarn("Signed in for this visit only. This browser is not saving your login, so you will have to type it again next time.");
   start();
 }
 function showLockErr(m){ var e=$("lockErr"); e.textContent=m; e.style.display="block"; }
@@ -387,6 +407,7 @@ function showLockErr(m){ var e=$("lockErr"); e.textContent=m; e.style.display="b
 function lockUp(){
   try{ localStorage.removeItem("peps-script-key"); }catch(e){}
   KEY=""; DATA=null;
+  var ki=$("kIn"); if(ki) ki.value="";
   $("app").classList.add("hide");
   $("rail").classList.add("hide");
   $("lock").classList.remove("hide");
@@ -413,6 +434,7 @@ function loadData(){
     .catch(function(err){
       var sub=$("hdrSub"); sub.style.display=""; sub.style.color="var(--red)";
       sub.textContent="Could not load the sheet";
+      bannerWarn("Not connected. Nothing on this page is live. Hit the lock icon and enter the script URL and password again.");
       toast("Load failed. Check the key and that the script is deployed. "+err.message,"bad");
     });
 }
@@ -549,11 +571,10 @@ function build(){
   fillSel("packed", OPTS.packed, pick(OPTS.packed, DEFAULTS.packed));
   fillSel("stockUp", OPTS.stockUp, pick(OPTS.stockUp, DEFAULTS.stockUp));
   fillSel("freeVial", OPTS.freeVial, pick(OPTS.freeVial, DEFAULTS.freeVial));
-  /* referrers keep their own referral tail so chains nest by themselves.
-     A datalist, not a dropdown, so a brand new partner can just be typed in. */
-  var refs = uniq(CUSTOMERS.map(function(c){ return c.full||c.name; }))
-              .sort(function(a,b){ return a.localeCompare(b, "en", {sensitivity:"base"}); });
-  $("refList").innerHTML = refs.map(function(r){ return '<option value="'+esc(r)+'"></option>'; }).join("");
+  /* Referrers keep their own referral tail so chains nest by themselves.
+     Searchable dropdown rather than a datalist, because datalists barely work on
+     iPhone. A brand new partner can still just be typed in. */
+  REFS = CUSTOMERS.slice().sort(function(a,b){ return a.name.localeCompare(b.name,"en",{sensitivity:"base"}); });
 
   var sub=$("hdrSub");
   if(!orders.length){ sub.style.display=""; sub.style.color="var(--red)"; sub.textContent="Could not read Customer_Orders"; }
@@ -565,6 +586,44 @@ function build(){
 
 /* ---------- customer combo ---------- */
 var comboHi=-1, comboItems=[];
+var REFS=[], refHi=-1, refItems=[];
+
+/* ---------- referred by combo ---------- */
+function renderRefCombo(){
+  var q=$("refIn").value.trim().toLowerCase();
+  var meFull=$("custIn").value.trim().toLowerCase();
+  var me=baseName($("custIn").value).toLowerCase();
+  var list=REFS.filter(function(c){
+    var full=String(c.full||c.name);
+    /* never offer them as their own referrer */
+    if(me && (c.name.toLowerCase()===me || full.toLowerCase()===meFull)) return false;
+    if(!q) return true;
+    return c.name.toLowerCase().indexOf(q)>=0 || full.toLowerCase().indexOf(q)>=0;
+  }).slice(0,40);
+  refItems=list;
+  var html="";
+  var typed=$("refIn").value.trim();
+  if(typed && !REFS.some(function(c){
+        return c.name.toLowerCase()===q || String(c.full||c.name).toLowerCase()===q; })){
+    html+='<div class="combo-item new" data-new="1">Use new partner: '+esc(typed)+'</div>';
+  }
+  list.forEach(function(c,i){
+    var full=String(c.full||c.name);
+    var tail=(full!==c.name)? full.slice(c.name.length).trim() : "";
+    html+='<div class="combo-item" data-i="'+i+'">'+esc(c.name)+
+          (tail?' <span style="color:var(--mut)">'+esc(tail)+'</span>':'')+
+          '<small>'+esc(c.mobile||"no number")+(c.orders?"  \u00b7  "+c.orders+" order"+(c.orders>1?"s":""):"")+'</small></div>';
+  });
+  if(!html) html='<div class="combo-item" style="color:var(--mut)">Nobody matches. Keep typing to use a new partner.</div>';
+  $("refList").innerHTML=html;
+  $("refList").classList.add("open");
+  refHi=-1;
+}
+function closeRefCombo(){ $("refList").classList.remove("open"); }
+function selectRef(c){
+  $("refIn").value = c.full || c.name;   // their full stored name, so chains nest
+  closeRefCombo(); render();
+}
 function renderCombo(){
   var q=$("custIn").value.trim().toLowerCase();
   var list=CUSTOMERS.filter(function(c){
@@ -826,7 +885,32 @@ $("custList").addEventListener("click", function(e){
   var i=parseInt(it.dataset.i,10);
   if(!isNaN(i) && comboItems[i]) selectCustomer(comboItems[i]);
 });
-document.addEventListener("click", function(e){ if(!e.target.closest("#custCombo")) closeCombo(); });
+$("refIn").addEventListener("input", function(){ renderRefCombo(); render(); });
+$("refIn").addEventListener("focus", renderRefCombo);
+$("refIn").addEventListener("keydown", function(e){
+  var items=Array.prototype.slice.call($("refList").querySelectorAll(".combo-item"));
+  if(e.key==="ArrowDown"||e.key==="ArrowUp"){
+    e.preventDefault(); if(!items.length) return;
+    refHi += (e.key==="ArrowDown"?1:-1);
+    if(refHi<0) refHi=items.length-1;
+    if(refHi>=items.length) refHi=0;
+    items.forEach(function(el,i){ el.classList.toggle("hi", i===refHi); });
+    items[refHi].scrollIntoView({block:"nearest"});
+  } else if(e.key==="Enter"){
+    if(refHi>=0 && items[refHi]){ e.preventDefault(); items[refHi].click(); }
+    else closeRefCombo();
+  } else if(e.key==="Escape"){ closeRefCombo(); }
+});
+$("refList").addEventListener("click", function(e){
+  var it=e.target.closest(".combo-item"); if(!it) return;
+  if(it.dataset.new){ closeRefCombo(); render(); return; }
+  var i=parseInt(it.dataset.i,10);
+  if(!isNaN(i) && refItems[i]) selectRef(refItems[i]);
+});
+document.addEventListener("click", function(e){
+  if(!e.target.closest("#custCombo")) closeCombo();
+  if(!e.target.closest("#refCombo"))  closeRefCombo();
+});
 
 $("lines").addEventListener("change", function(e){
   var t=e.target, l;
@@ -864,6 +948,97 @@ $("lockBtn").addEventListener("click", lockUp);
 window.addEventListener("beforeunload", function(e){
   if(validLines().length && customerName()){ e.preventDefault(); e.returnValue=""; }
 });
+
+/* ---------- login polish: works the same in Safari and Chrome ---------- */
+(function(){
+  var F=document.getElementById("lockForm")||document.getElementById("setupForm");
+  if(!F)return;
+  var U=document.getElementById("uIn")||document.getElementById("urlInput");
+  var K=document.getElementById("kIn")||document.getElementById("keyInput");
+  if(!U||!K)return;
+  var go=(typeof doUnlock==="function")?doUnlock:((typeof connect==="function")?connect:null);
+
+  /* iOS keyboard: Next on the URL, Go on the key */
+  U.setAttribute("enterkeyhint","next");
+  K.setAttribute("enterkeyhint","go");
+  U.setAttribute("autocapitalize","off");
+  U.setAttribute("autocorrect","off");
+
+  function mini(txt,onTap){
+    var b=document.createElement("button");
+    b.type="button"; b.textContent=txt;
+    b.style.cssText="position:absolute;right:7px;top:50%;transform:translateY(-50%);z-index:3;"+
+      "background:rgba(255,255,255,.10);color:#cbd5e1;border:0;border-radius:7px;padding:6px 10px;"+
+      "font-size:11px;font-weight:600;cursor:pointer;-webkit-appearance:none;line-height:1";
+    b.addEventListener("click",onTap);
+    return b;
+  }
+  function wrap(inp,btn){
+    var holder=document.createElement("div");
+    holder.style.cssText="position:relative;display:block;flex:1;min-width:0";
+    inp.parentNode.insertBefore(holder,inp);
+    holder.appendChild(inp); holder.appendChild(btn);
+    inp.style.paddingRight="66px";
+    inp.style.width="100%";
+    inp.style.boxSizing="border-box";
+  }
+
+  /* Paste, because the Apps Script URL is far too long to type on a phone */
+  wrap(U, mini("Paste", function(){
+    if(navigator.clipboard&&navigator.clipboard.readText){
+      navigator.clipboard.readText().then(function(t){
+        if(t&&t.trim()){U.value=t.trim();K.focus();}else U.focus();
+      })["catch"](function(){U.focus();});
+    }else U.focus();
+  }));
+
+  /* Show / hide the key, so a typo is findable */
+  var eye=mini("Show", function(){
+    var hidden=K.type==="password";
+    K.type=hidden?"text":"password";
+    eye.textContent=hidden?"Hide":"Show";
+  });
+  wrap(K,eye);
+
+  /* Chrome and Android can store and refill this silently. Safari ignores it
+     harmlessly and falls back to the normal keychain prompt. */
+  window.__credStore=function(u,k){
+    try{
+      if(window.PasswordCredential&&navigator.credentials&&navigator.credentials.store){
+        navigator.credentials.store(new window.PasswordCredential({id:u,password:k,name:"PPR Hub"}))["catch"](function(){});
+      }
+    }catch(e){}
+  };
+
+  var lockEl=document.getElementById("lock");
+  var setupEl=document.getElementById("setupBox");
+  var needsLogin = lockEl ? !lockEl.classList.contains("hide")
+                 : (setupEl ? setupEl.style.display!=="none" : false);
+
+  if(needsLogin){
+    try{
+      if(window.PasswordCredential&&navigator.credentials&&navigator.credentials.get&&!K.value){
+        navigator.credentials.get({password:true,mediation:"optional"}).then(function(c){
+          if(c&&c.password){ if(c.id)U.value=c.id; K.value=c.password; if(go)go(); }
+        })["catch"](function(){});
+      }
+    }catch(e){}
+  }
+
+  /* The only thing that truly survives on an iPhone. Both Safari and Chrome on iOS
+     get their saved data wiped after 7 days of not opening the site. A home screen
+     copy is exempt from that. */
+  var standalone=(window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches)||navigator.standalone===true;
+  var iOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+  if(iOS&&!standalone&&needsLogin){
+    var tip=document.createElement("p");
+    tip.style.cssText="font-size:11.5px;line-height:1.55;opacity:.72;margin:14px 0 0;text-align:left";
+    tip.innerHTML="Keeps forgetting you? Tap Share, then Add to Home Screen, and open it from there instead. "+
+                  "iPhone wipes the saved login for any site you have not opened in 7 days. Home screen copies are left alone.";
+    F.parentNode.insertBefore(tip,F.nextSibling);
+  }
+})();
+
 </script>
 </body>
 </html>
