@@ -377,11 +377,51 @@ function refCodeFor(name){
 }
 /* Fetch their rewards. Apps Script can be slow or cold, so give it a generous window,
    retry once, and be honest about WHY it failed instead of blaming the name. */
+/* Two speed ups. Anything we can work out from the orders sheet already on the device
+   is shown straight away, and the last answer from the feed is kept per customer so a
+   repeat look up paints instantly while a fresh one comes down behind it. */
+function rewCacheKey(nm){ return "peps-rew-"+refCodeFor(nm); }
+function rewCacheGet(nm){
+  try{ var c=JSON.parse(localStorage.getItem(rewCacheKey(nm))||"null"); return (c&&c.client)?c:null; }catch(e){ return null; }
+}
+function rewCacheSet(nm,client){
+  try{ localStorage.setItem(rewCacheKey(nm),JSON.stringify({at:Date.now(),client:client})); }catch(e){}
+}
+/* Free vials and referrals come straight out of Customer_Orders, which is already loaded,
+   so they never need to wait on the feed. Only the credit balance does. */
+function localRewards(nm){
+  if(!DATA_READY||RCOL.customer==null||RCOL.customer<0) return null;
+  var rows=(DATA&&DATA[CFG.ordersSheet])||[]; if(!rows.length) return null;
+  var hdr=findHeaderRow(rows);
+  var target=String(nm||"").trim().toLowerCase();
+  var vials=0, used=0, refs={}, seenName=false;
+  for(var i=hdr+1;i<rows.length;i++){
+    var r=rows[i]; if(!r) continue;
+    var full=String(r[RCOL.customer]||"").trim(); if(!full) continue;
+    var low=full.toLowerCase();
+    if(low===target){
+      seenName=true;
+      var q=Math.max(1,num(r[6])||1);
+      var fv=String(r[22]||"").trim().toLowerCase();
+      if(fv==="yes"||fv==="y"||fv==="true"||fv==="1"){
+        if(!/bacteriostatic|bac\s*water/i.test(String(r[5]||r[4]||""))) vials+=q;
+      }
+      used+=num(r[23])||0;
+    }
+    var m=full.match(/\(\s*referral\s+(.+)\)\s*$/i);
+    if(m && baseName(m[1]).toLowerCase()===baseName(nm).toLowerCase()) refs[low]=1;
+  }
+  if(!seenName) return null;
+  return {freeVialCount:vials, creditUsed:used, referralCount:Object.keys(refs).length, partial:true};
+}
 function loadRewards(name, isRetry){
   var nm=String(name||"").trim();
   if(!nm){ REW=null; REW_FOR=""; REW_ERR=""; useFuturePts=false; paintPts(); return; }
   if((REW_FOR===nm && !isRetry) || REW_BUSY) return;
-  REW_FOR=nm; REW=null; REW_ERR=""; REW_BUSY=true; useFuturePts=false; paintPts();
+  REW_FOR=nm; REW_ERR=""; REW_BUSY=true; useFuturePts=false;
+  var cached=rewCacheGet(nm);
+  REW = cached ? cached.client : (localRewards(nm) || null);   // something on screen immediately
+  paintPts();
 
   var ctrl=(typeof AbortController!=="undefined")?new AbortController():null;
   var timer=setTimeout(function(){ if(ctrl) ctrl.abort(); }, 45000);
@@ -397,7 +437,7 @@ function loadRewards(name, isRetry){
       var d=null;
       try{ d=JSON.parse(txt); }catch(e){ throw new Error("feed did not return data"); }
       REW_BUSY=false;
-      if(d&&d.ok&&d.client){ REW=d.client; REW_ERR=""; }
+      if(d&&d.ok&&d.client){ REW=d.client; REW_ERR=""; rewCacheSet(nm,d.client); }
       else { REW=false; REW_ERR=(d&&d.error==="not_found")?"notfound":"other"; }
       paintPts();
     })
@@ -405,7 +445,7 @@ function loadRewards(name, isRetry){
       clearTimeout(timer);
       REW_BUSY=false;
       if(!isRetry){ REW_FOR=""; loadRewards(nm,true); return; }   // one quiet retry, feed is often just cold
-      REW=false; REW_ERR="net";
+      if(!REW){ REW=false; REW_ERR="net"; }                       // keep whatever is already showing
       paintPts();
     });
 }
@@ -487,18 +527,19 @@ function paintPts(){
     return;
   }
   if(!REW){ box.style.display="none"; return; }
+  var partial=!!REW.partial;
   var avail=Number(REW.creditAvailable)||0, ms=Number(REW.monthSpend)||0;
   var vials=Number(REW.freeVialCount)||0, refs=Number(REW.referralCount)||0;
   var f=futurePts();
   var row=function(l,v,c){ return '<div style="display:flex;justify-content:space-between;gap:12px"><span style="color:var(--mut)">'+l+'</span><span style="font-weight:600'+(c?';color:'+c:'')+'">'+v+'</span></div>'; };
   var h='<div style="display:grid;gap:3px">'+
-    row("Credit available", money(avail), avail>0?"var(--green)":"")+
-    row("Spent this month", money(ms))+
+    row("Credit available", partial?'<span style="color:var(--mut)">checking\u2026</span>':money(avail), (!partial&&avail>0)?"var(--green)":"")+
+    (partial?'':row("Spent this month", money(ms)))+
     row("Free vials taken", vials)+
     row("Referrals", refs)+
     '</div>';
-  if(avail>0) h+='<button type="button" class="btn btn-s btn-sm" style="margin-top:9px" onclick="applyBanked()">Use '+money(Math.min(avail,PER_ORDER_CAP))+' credit</button>';
-  if(f>0) h+='<label style="display:flex;align-items:center;gap:7px;margin-top:9px;cursor:pointer">'+
+  if(!partial&&avail>0) h+='<button type="button" class="btn btn-s btn-sm" style="margin-top:9px" onclick="applyBanked()">Use '+money(Math.min(avail,PER_ORDER_CAP))+' credit</button>';
+  if(!partial&&f>0) h+='<label style="display:flex;align-items:center;gap:7px;margin-top:9px;cursor:pointer">'+
     '<input type="checkbox" '+(useFuturePts?"checked":"")+' onchange="toggleFuturePts(this)"> This order earns them '+money(f)+', give it now</label>';
   box.innerHTML=h;
 }
@@ -875,6 +916,7 @@ function selectCustomer(c){
   $("refIn").value = "";                   // the tail is already in the name
   if(c.mobile) $("mobIn").value=c.mobile;
   closeCombo(); render();
+  clearTimeout(_rewTimer); loadRewards(customerName());   // they have chosen, no need to wait
 }
 
 /* ---------- lines ---------- */
