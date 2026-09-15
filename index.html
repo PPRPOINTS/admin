@@ -409,9 +409,13 @@ function checkCredit(){
   }
   if(sub>0&&c>=sub-0.005){
     var dropTo=Math.max(0,sub-1);
+    /* Adding one cheap item does not fix it on its own. It only becomes payable once the
+       order passes what credit can cover, which is their balance or the $100 cap. */
+    var usable=Math.min(avail!=null?avail:PER_ORDER_CAP, PER_ORDER_CAP);
+    var needed=Math.max(0, usable-sub+1);
     msgs.push("<b>Credit is covering the whole order.</b> The terms say credit rides alongside a purchase, it does not pay for one outright."+
               "<div>Type "+money(dropTo)+" instead, so there is still something to pay.</div>"+
-              "<div>Or add another item to the order and leave the credit where it is.</div>");
+              (needed>0?"<div>Or add "+money(needed)+" more of product. Credit can only ever cover "+money(usable)+" of an order.</div>":""));
   }
   if(!msgs.length){ box.style.display="none"; box.innerHTML=""; return; }
   box.style.display="block";
