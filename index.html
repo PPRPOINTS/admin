@@ -250,7 +250,8 @@ tr:last-child td{border-bottom:none}
       <div><label for="payMeth">How it's being paid</label><select id="payMeth"></select></div>
       <div><label for="funds">Where the funds live</label><select id="funds"></select></div>
       <div><label for="payHit">Payment account hit</label><select id="payHit"></select></div>
-      <div><label for="credit">Credit used</label><input type="number" id="credit" step="0.01" min="0" placeholder="0.00"></div>
+      <div><label for="credit">Credit used</label><input type="number" id="credit" step="0.01" min="0" placeholder="0.00">
+        <div id="creditWarn" style="display:none;background:rgba(248,113,113,.10);border:1px solid rgba(248,113,113,.45);color:#fca5a5;border-radius:9px;padding:10px 12px;font-size:12px;line-height:1.5;margin-top:7px"></div></div>
     </div>
     <div class="echo hide" id="cashNote"></div>
   </div>
@@ -389,6 +390,32 @@ function applyBanked(){
   var avail=Number(REW.creditAvailable)||0, sub=orderTotal();
   $("credit").value=Math.min(avail, PER_ORDER_CAP, sub||avail).toFixed(2);
   render();
+}
+/* Terms check on the Credit used box. Three rules can be broken: more than they have,
+   more than $100 on one order, or credit paying for the whole thing. Each one names the
+   number to type instead so it is one edit, not a guess. */
+function checkCredit(){
+  var box=$("creditWarn"); if(!box) return;
+  var c=num($("credit").value)||0, sub=orderTotal();
+  var avail=REW?(Number(REW.creditAvailable)||0)+(useFuturePts?futurePts():0):null;
+  var msgs=[];
+  if(c>0&&avail!=null&&c>avail+0.005){
+    msgs.push("<b>More credit than they have.</b> They have "+money(avail)+(useFuturePts?" including what this order earns":"")+
+              ".<div>Type "+money(avail)+" instead"+(c-avail>0?", and they pay the other "+money(c-avail):"")+".</div>");
+  }
+  if(c>PER_ORDER_CAP+0.005){
+    msgs.push("<b>Over the "+money(PER_ORDER_CAP)+" per order limit.</b><div>Type "+money(PER_ORDER_CAP)+
+              " instead. The remaining "+money(c-PER_ORDER_CAP)+" stays in their balance for next time.</div>");
+  }
+  if(sub>0&&c>=sub-0.005){
+    var dropTo=Math.max(0,sub-1);
+    msgs.push("<b>Credit is covering the whole order.</b> The terms say credit rides alongside a purchase, it does not pay for one outright."+
+              "<div>Type "+money(dropTo)+" instead, so there is still something to pay.</div>"+
+              "<div>Or add another item to the order and leave the credit where it is.</div>");
+  }
+  if(!msgs.length){ box.style.display="none"; box.innerHTML=""; return; }
+  box.style.display="block";
+  box.innerHTML=msgs.join('<div style="height:8px"></div>');
 }
 function paintPts(){
   var box=$("ptsCard"); if(!box) return;
@@ -834,6 +861,7 @@ function render(){
   var nm=customerName();
   loadRewards(nm);
   paintPts();
+  checkCredit();
   var typedHasRef=/\(Referral\b/i.test($("custIn").value.trim());
   $("nameOut").innerHTML = nm
     ? 'Column C reads <b>'+esc(nm)+'</b>' +
