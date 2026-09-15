@@ -211,7 +211,7 @@ tr:last-child td{border-bottom:none}
       <div class="sub" id="hdrSub">Loading</div>
     </div>
     <div class="mast-r">
-      <div class="livewrap"><span class="dot"></span><span>Connected</span></div>
+      <div class="livewrap" id="liveWrap"><span class="dot" id="liveDot"></span><span id="liveLbl">Connecting</span></div>
       <button class="btn btn-s btn-sm" id="reloadBtn">Reload sheet</button>
       <button class="btn btn-s btn-ic" id="lockBtn" title="Lock" aria-label="Lock">
         <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></button>
@@ -343,6 +343,21 @@ var DEFAULTS = {payStatus:"Unpaid",fulfil:"Pending",packed:"No",stockUp:"No",pay
 /* ---------- state ---------- */
 var KEY="", URL_="";
 var DATA=null, RCOL={}, OPTS={}, PRODUCTS=[], CUSTOMERS=[], LINES=[];
+var DATA_READY=false;
+/* The pill used to say Connected from the moment the page opened, which is why typing a
+   name before the sheet landed looked broken. It now tracks the real state. */
+function setConn(state){
+  var dot=$("liveDot"), lbl=$("liveLbl"), sub=$("hdrSub");
+  if(!dot||!lbl) return;
+  var map={loading:["#f59e0b","Loading sheet"],ready:["var(--green)","Connected"],fail:["#ef4444","Not connected"]};
+  var m=map[state]||map.loading;
+  dot.style.background=m[0]; dot.style.animation=(state==="ready")?"":"none";
+  lbl.textContent=m[1];
+  if(sub){
+    if(state==="loading"){ sub.style.color="var(--amber)"; sub.textContent="Loading your customers and products, one moment"; }
+    else if(state==="ready"){ sub.style.color=""; sub.textContent=""; sub.style.display="none"; }
+  }
+}
 
 /* ---------- Their points, pulled from the same feed the customer sees ----------
    Read only. Nothing here writes, it just saves opening the dashboard to check. */
@@ -393,6 +408,15 @@ function loadRewards(name, isRetry){
       REW=false; REW_ERR="net";
       paintPts();
     });
+}
+/* Wait until they stop typing. Firing on every keystroke meant "ta" got looked up and
+   came back with a not-found message while they were still halfway through the name. */
+var _rewTimer=null;
+function queueRewards(nm){
+  clearTimeout(_rewTimer);
+  var name=String(nm||"").trim();
+  if(!DATA_READY || name.length<2){ REW=null; REW_FOR=""; REW_ERR=""; paintPts(); return; }
+  _rewTimer=setTimeout(function(){ loadRewards(name); }, 600);
 }
 function retryRewards(){ var nm=customerName(); REW_FOR=""; loadRewards(nm,true); }
 function orderTotal(){ return validLines().reduce(function(s,l){ return s+l.qty*l.price; },0); }
@@ -450,7 +474,8 @@ function checkCredit(){
 function paintPts(){
   var box=$("ptsCard"); if(!box) return;
   var nm=customerName();
-  if(!nm){ box.style.display="none"; return; }
+  if(!nm||!DATA_READY||nm.trim().length<2){ box.style.display="none"; return; }
+  if(!REW&&!REW_BUSY&&REW_FOR!==nm){ box.style.display="none"; return; }
   box.style.display="block";
   if(REW_BUSY){ box.innerHTML='<span style="color:var(--mut)">Loading their points\u2026</span>'; return; }
   if(REW===false){
@@ -578,7 +603,8 @@ function start(){
   $("lock").classList.add("hide");
   $("app").classList.remove("hide");
   $("rail").classList.remove("hide");
-  var sub=$("hdrSub"); sub.style.display=""; sub.style.color=""; sub.textContent="Loading";
+  DATA_READY=false; setConn("loading");
+  var sub=$("hdrSub"); sub.style.display="";
   loadData();
 }
 function apiUrl(){ return URL_+(URL_.indexOf("?")>=0?"&":"?")+"key="+encodeURIComponent(KEY)+"&t="+Date.now(); }
@@ -588,11 +614,12 @@ function loadData(){
     .then(function(r){ return r.json(); })
     .then(function(j){
       if(j && j.error) throw new Error(j.error);
-      DATA=j; build();
+      DATA=j; DATA_READY=true; build(); setConn("ready");
     })
     .catch(function(err){
+      DATA_READY=false; setConn("fail");
       var sub=$("hdrSub"); sub.style.display=""; sub.style.color="var(--red)";
-      sub.textContent="Could not load the sheet";
+      sub.textContent="Could not load the sheet. Hit the lock icon and sign in again.";
       bannerWarn("Not connected. Nothing on this page is live. Hit the lock icon and enter the script URL and password again.");
       toast("Load failed. Check the key and that the script is deployed. "+err.message,"bad");
     });
@@ -802,7 +829,8 @@ function renderCombo(){
             (tail?' <span style="color:var(--mut)">'+esc(tail)+'</span>':'')+
             '<small>'+esc(c.mobile||"no number")+(c.orders?"  ·  "+c.orders+" order"+(c.orders>1?"s":""):"")+'</small></div>';
   });
-  if(!html) html='<div class="combo-item" style="color:var(--mut)">Nothing matches. Keep typing to add a new customer.</div>';
+  if(!DATA_READY) html='<div class="combo-item" style="color:var(--amber)">Still loading your customers, give it a second\u2026</div>';
+  else if(!html) html='<div class="combo-item" style="color:var(--mut)">Nothing matches. Keep typing to add a new customer.</div>';
   $("custList").innerHTML=html;
   $("custList").classList.add("open");
   comboHi=-1;
@@ -920,7 +948,7 @@ function render(){
   $("sStat").innerHTML='<span class="pill '+(st.toLowerCase()==="paid"?"pill-g":(st.toLowerCase().indexOf("part")>=0?"pill-a":"pill-r"))+'">'+esc(st)+'</span>';
 
   var nm=customerName();
-  loadRewards(nm);
+  queueRewards(nm);
   paintPts();
   checkCredit();
   var typedHasRef=/\(Referral\b/i.test($("custIn").value.trim());
