@@ -1051,10 +1051,25 @@ function render(){
   queueRewards(nm);
   paintPts();
   checkCredit();
+  /* The name already carries its own "(Referral X)" tail, so the Referred by box has
+     nothing to do. Hide it rather than leave a field sitting there that gets ignored. */
   var typedHasRef=/\(Referral\b/i.test($("custIn").value.trim());
+  var refBox=$("refCombo");
+  if(refBox){
+    var wrap=refBox.parentNode&&refBox.parentNode.classList&&refBox.parentNode.classList.contains("f")?refBox.parentNode:refBox;
+    if(typedHasRef){
+      if(wrap.style.display!=="none"){
+        wrap.style.display="none";
+        $("refIn").value="";                 // never send a value the name overrides
+        closeRefCombo();
+      }
+    } else if(wrap.style.display==="none"){
+      wrap.style.display="";
+    }
+  }
   $("nameOut").innerHTML = nm
     ? 'Column C reads <b>'+esc(nm)+'</b>' +
-      (typedHasRef && $("refIn").value.trim() ? '<br>The name already carries a referral, so the box above is ignored.' : '')
+      (typedHasRef ? '<br>Referred by is hidden because the name already carries <b>'+esc((String($("custIn").value).match(/\(\s*Referral\s+(.+)\)\s*$/i)||["",""])[1].trim())+'</b>.' : '')
     : 'Pick a customer from the list or type a new name.';
 
   var cash=String($("payMeth").value||"").toLowerCase().indexOf("cash")>=0;
