@@ -348,7 +348,7 @@ var DATA=null, RCOL={}, OPTS={}, PRODUCTS=[], CUSTOMERS=[], LINES=[];
 var REWARDS_EP="https://script.google.com/macros/s/AKfycby6GS7W7o7sFKceSUAxrYW6QHKvDyj8D9lljgDYtN3j_cqAEmg6gSj-kh0Oj5xrf_Dr7A/exec";
 var PTS_TIERS=[{min:100,pts:10},{min:300,pts:25},{min:500,pts:40}];
 var CREDIT_CAP=200, PER_ORDER_CAP=100;
-var REW=null, REW_FOR="", REW_BUSY=false, useFuturePts=false;
+var REW=null, REW_FOR="", REW_BUSY=false, REW_ERR="", useFuturePts=false;
 
 function ptsFor(v){ var p=0; PTS_TIERS.forEach(function(t){ if(v>=t.min)p=t.pts; }); return p; }
 /* Must stay byte-identical to refCode() in the rewards script, or the lookup misses. */
@@ -359,16 +359,41 @@ function refCodeFor(name){
   for(var i=0;i<str.length;i++){ var c=str.charCodeAt(i); h1=Math.imul(h1^c,16777619)>>>0; h2=(Math.imul(h2,33)+c)>>>0; }
   return (("00000"+h1.toString(36)).slice(-5)+("00000"+h2.toString(36)).slice(-5));
 }
-function loadRewards(name){
+/* Fetch their rewards. Apps Script can be slow or cold, so give it a generous window,
+   retry once, and be honest about WHY it failed instead of blaming the name. */
+function loadRewards(name, isRetry){
   var nm=String(name||"").trim();
-  if(!nm){ REW=null; REW_FOR=""; useFuturePts=false; paintPts(); return; }
-  if(REW_FOR===nm || REW_BUSY) return;
-  REW_FOR=nm; REW=null; REW_BUSY=true; useFuturePts=false; paintPts();
-  fetch(REWARDS_EP+"?k="+encodeURIComponent(refCodeFor(nm))+"&t="+Date.now())
-    .then(function(r){ return r.json(); })
-    .then(function(d){ REW_BUSY=false; REW=(d&&d.ok&&d.client)?d.client:false; paintPts(); })
-    .catch(function(){ REW_BUSY=false; REW=false; paintPts(); });
+  if(!nm){ REW=null; REW_FOR=""; REW_ERR=""; useFuturePts=false; paintPts(); return; }
+  if((REW_FOR===nm && !isRetry) || REW_BUSY) return;
+  REW_FOR=nm; REW=null; REW_ERR=""; REW_BUSY=true; useFuturePts=false; paintPts();
+
+  var ctrl=(typeof AbortController!=="undefined")?new AbortController():null;
+  var timer=setTimeout(function(){ if(ctrl) ctrl.abort(); }, 45000);
+  var opts=ctrl?{signal:ctrl.signal}:{};
+
+  fetch(REWARDS_EP+"?k="+encodeURIComponent(refCodeFor(nm))+"&t="+Date.now(), opts)
+    .then(function(r){
+      if(!r.ok) throw new Error("feed returned "+r.status);
+      return r.text();
+    })
+    .then(function(txt){
+      clearTimeout(timer);
+      var d=null;
+      try{ d=JSON.parse(txt); }catch(e){ throw new Error("feed did not return data"); }
+      REW_BUSY=false;
+      if(d&&d.ok&&d.client){ REW=d.client; REW_ERR=""; }
+      else { REW=false; REW_ERR=(d&&d.error==="not_found")?"notfound":"other"; }
+      paintPts();
+    })
+    .catch(function(e){
+      clearTimeout(timer);
+      REW_BUSY=false;
+      if(!isRetry){ REW_FOR=""; loadRewards(nm,true); return; }   // one quiet retry, feed is often just cold
+      REW=false; REW_ERR="net";
+      paintPts();
+    });
 }
+function retryRewards(){ var nm=customerName(); REW_FOR=""; loadRewards(nm,true); }
 function orderTotal(){ return validLines().reduce(function(s,l){ return s+l.qty*l.price; },0); }
 /* Credit this order is about to earn them. Same maths as the dashboard calculator. */
 function futurePts(){
@@ -427,7 +452,14 @@ function paintPts(){
   if(!nm){ box.style.display="none"; return; }
   box.style.display="block";
   if(REW_BUSY){ box.innerHTML='<span style="color:var(--mut)">Loading their points\u2026</span>'; return; }
-  if(REW===false){ box.innerHTML='<span style="color:var(--mut)">No points page for this name yet. New customer, or the name does not match the sheet.</span>'; return; }
+  if(REW===false){
+    var why = REW_ERR==="notfound"
+      ? 'No points row for <b>'+esc(nm)+'</b> yet. Capitals and the referral tag do not matter, so this means they are not in the points block on the Dashboard tab.'
+      : 'Could not reach the points feed. It is usually just slow waking up.';
+    box.innerHTML='<span style="color:var(--mut)">'+why+'</span>'+
+      '<button type="button" class="btn btn-s btn-sm" style="margin-top:8px" onclick="retryRewards()">Try again</button>';
+    return;
+  }
   if(!REW){ box.style.display="none"; return; }
   var avail=Number(REW.creditAvailable)||0, ms=Number(REW.monthSpend)||0;
   var vials=Number(REW.freeVialCount)||0, refs=Number(REW.referralCount)||0;
@@ -478,6 +510,24 @@ function toast(msg,kind){
 
 /* Strips a "(Referral ...)" tail no matter how deeply it nests, so
    "Emily Wonka (Referral Katie Wonka (Referral Monique))" gives "Emily Wonka" */
+/* The same person can appear spelled several ways across the sheets, for example
+   "Talia (Referral Nat)" in one tab and "talia (referral nat)" in another. Keep the
+   longest one, and when two are the same length keep the one with proper capitals,
+   so picking them from the list never drops the caps. */
+function capScore(s){
+  var str=String(s||"");
+  var letters=(str.match(/[A-Za-z]/g)||[]).length;
+  var up=(str.match(/[A-Z]/g)||[]).length;
+  if(!letters||!up) return 0;      // all lowercase
+  if(up===letters)  return 1;      // ALL CAPS, better than nothing but not it
+  return 2;                        // Proper Mixed Case, what we want
+}
+function betterSpelling(current, candidate){
+  var a=String(current||""), b=String(candidate||"");
+  if(!a) return true;
+  if(b.length!==a.length) return b.length>a.length;
+  return capScore(b)>capScore(a);
+}
 function baseName(full){
   var s=String(full||"").trim();
   var i=s.search(/\s*\(Referral\b/i);
@@ -653,7 +703,8 @@ function build(){
         if(!map[k6]) map[k6]={name:b6, full:full6, mobile:"", orders:0};
         var ph=String(row6[mIx]||"").trim();
         if(ph && !map[k6].mobile) map[k6].mobile=ph;
-        if(full6.length > String(map[k6].full||"").length) map[k6].full=full6;
+        if(betterSpelling(map[k6].full, full6)) map[k6].full=full6;
+        if(betterSpelling(map[k6].name, b6))   map[k6].name=b6;
       }
     }
   }
@@ -663,7 +714,8 @@ function build(){
       var full7=String(r7[RCOL.customer]||"").trim(); if(!full7) continue;
       var b7=baseName(full7), k7=b7.toLowerCase();
       if(!map[k7]) map[k7]={name:b7, full:full7, mobile:"", orders:0};
-      if(full7.length > String(map[k7].full||"").length) map[k7].full=full7;
+      if(betterSpelling(map[k7].full, full7)) map[k7].full=full7;
+      if(betterSpelling(map[k7].name, b7))   map[k7].name=b7;
       map[k7].orders++;
     }
   }
