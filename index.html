@@ -251,6 +251,7 @@ tr:last-child td{border-bottom:none}
       <div><label for="funds">Where the funds live</label><select id="funds"></select></div>
       <div><label for="payHit">Payment account hit</label><select id="payHit"></select></div>
       <div><label for="credit">Credit used</label><input type="number" id="credit" step="0.01" min="0" placeholder="0.00">
+        <div style="font-size:10.5px;color:var(--mut);margin-top:5px">Goes on the first product line only, so the sheet cannot count it twice</div>
         <div id="creditWarn" style="display:none;background:rgba(248,113,113,.10);border:1px solid rgba(248,113,113,.45);color:#fca5a5;border-radius:9px;padding:10px 12px;font-size:12px;line-height:1.5;margin-top:7px"></div></div>
     </div>
     <div class="echo hide" id="cashNote"></div>
@@ -894,8 +895,12 @@ function buildRows(){
   v0.credit=$("credit").value.trim()==="" ? "" : num($("credit").value);
   v0.notes=$("notes").value.trim();
 
-  return validLines().map(function(l){
+  /* Credit used is an ORDER level figure, not a per line one. Writing it on every line
+     makes the sheet add it up once per product, so a $45 credit on a two line order reads
+     as $90 spent. It goes on the first line only. */
+  return validLines().map(function(l, ix){
     var v={}; for(var k in v0) v[k]=v0[k];
+    if(ix>0) v.credit="";
     v.sku=l.sku; v.qty=l.qty;
     var cells={};
     FIELDS.forEach(function(f){ if(v[f.k]!==undefined) cells[f.c]=v[f.k]; });
