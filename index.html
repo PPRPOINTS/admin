@@ -792,10 +792,28 @@ function build(){
       net: num(pv(r4,["Customer Cost","Net Price ","Net Price","Net Price ex GST (AUD)"])),
       cash: num(pv(r4,[" Cash Price ","Cash Price ","Cash Price"])),
       onHand: num(pv(r4,["On Hand","Total Units"])),
+      strength: String(pv(r4,["Strength","Dose","Size","Mg","mg"])||"").trim(),
+      unit: String(pv(r4,["Unit","Format"])||"").trim(),
       status: String(pv(r4,["Status"])||"").trim()
     });
   }
   PRODUCTS = PRODUCTS.filter(function(p){ return p.sku; });
+  /* Two rows can both read "Retatrutide" and only the strength tells them apart, so the
+     dropdown has to show it. Falls back to the SKU when the sheet has no strength, because
+     an unlabelled duplicate is worse than an ugly one. */
+  (function(){
+    var seen = {};
+    PRODUCTS.forEach(function(p){ var k=(p.name||"").toLowerCase(); seen[k]=(seen[k]||0)+1; });
+    PRODUCTS.forEach(function(p){
+      var bits = [p.name || p.sku];
+      var st = p.strength;
+      if (st && String(p.name||"").toLowerCase().indexOf(String(st).toLowerCase())<0){
+        bits.push(/[a-z]/i.test(st) ? st : st + (p.unit || "mg"));
+      }
+      if (bits.length === 1 && seen[(p.name||"").toLowerCase()] > 1) bits.push(p.sku);
+      p.label = bits.join(" ");
+    });
+  })();
   PRODUCTS.sort(function(a,b){
     var as=a.status.toLowerCase()==="active"?0:1, bs=b.status.toLowerCase()==="active"?0:1;
     return as!==bs ? as-bs : (a.name||a.sku).localeCompare(b.name||b.sku, "en", {sensitivity:"base"});
@@ -975,7 +993,7 @@ function renderLines(){
         '<div style="grid-column:span 2;min-width:200px"><label>Product</label>'+
           '<select data-sku="'+l.id+'"><option value="">Choose a product</option>'+
           PRODUCTS.map(function(pr){
-            return '<option value="'+esc(pr.sku)+'"'+(pr.sku===l.sku?" selected":"")+'>'+esc(pr.name||pr.sku)+
+            return '<option value="'+esc(pr.sku)+'"'+(pr.sku===l.sku?" selected":"")+'>'+esc(pr.label||pr.name||pr.sku)+
                    (pr.status && pr.status.toLowerCase()!=="active"?" "+esc(pr.status):"")+'</option>';
           }).join("")+'</select>'+
           (stockTxt?'<div class="stock '+stockCls+'">'+esc(stockTxt)+'</div>':'')+
