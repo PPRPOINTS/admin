@@ -349,7 +349,7 @@ var DATA_READY=false;
 function setConn(state){
   var dot=$("liveDot"), lbl=$("liveLbl"), sub=$("hdrSub");
   if(!dot||!lbl) return;
-  var map={loading:["#f59e0b","Loading sheet"],ready:["var(--green)","Connected"],fail:["#ef4444","Not connected"]};
+  var map={loading:["#f59e0b","Loading sheet"],cached:["#f59e0b","Saved copy"],ready:["var(--green)","Connected"],fail:["#ef4444","Not connected"]};
   var m=map[state]||map.loading;
   dot.style.background=m[0]; dot.style.animation=(state==="ready")?"":"none";
   lbl.textContent=m[1];
@@ -609,16 +609,42 @@ function start(){
 }
 function apiUrl(){ return URL_+(URL_.indexOf("?")>=0?"&":"?")+"key="+encodeURIComponent(KEY)+"&t="+Date.now(); }
 
+/* The sheet is big and the script can be slow, so keep the last copy and open with it.
+   The customer list is usable straight away while a fresh copy comes down behind it. */
+var CACHE_KEY="peps-admin-sheet", REBUILDING=false;
+function cacheSave(j){
+  try{ var s=JSON.stringify({at:Date.now(),data:j}); if(s.length<4000000) localStorage.setItem(CACHE_KEY,s); }catch(e){}
+}
+function cacheLoad(){
+  try{ var c=JSON.parse(localStorage.getItem(CACHE_KEY)||"null"); return (c&&c.data)?c:null; }catch(e){ return null; }
+}
 function loadData(){
+  var cached=cacheLoad();
+  if(cached && !DATA_READY){
+    DATA=cached.data; DATA_READY=true; build();
+    setConn("cached");
+    var mins=Math.round((Date.now()-(cached.at||0))/60000);
+    var sub=$("hdrSub"); if(sub){ sub.style.display=""; sub.style.color="var(--amber)";
+      sub.textContent="Showing your last copy"+(mins<600?" from "+(mins<1?"just now":mins+" min ago"):"")+", checking for changes"; }
+  }
   fetch(apiUrl(), {method:"GET", redirect:"follow"})
     .then(function(r){ return r.json(); })
     .then(function(j){
       if(j && j.error) throw new Error(j.error);
-      DATA=j; DATA_READY=true; build(); setConn("ready");
+      DATA=j; cacheSave(j);
+      REBUILDING=DATA_READY;                 // true when we already painted from cache
+      DATA_READY=true; build(); REBUILDING=false;
+      setConn("ready");
     })
     .catch(function(err){
-      DATA_READY=false; setConn("fail");
       var sub=$("hdrSub"); sub.style.display=""; sub.style.color="var(--red)";
+      if(DATA_READY){                        // cache is on screen, so this is only a refresh miss
+        setConn("cached");
+        sub.style.color="var(--amber)";
+        sub.textContent="Could not refresh. Showing your last saved copy.";
+        return;
+      }
+      DATA_READY=false; setConn("fail");
       sub.textContent="Could not load the sheet. Hit the lock icon and sign in again.";
       bannerWarn("Not connected. Nothing on this page is live. Hit the lock icon and enter the script URL and password again.");
       toast("Load failed. Check the key and that the script is deployed. "+err.message,"bad");
@@ -750,6 +776,11 @@ function build(){
   CUSTOMERS = Object.keys(map).map(function(k){ return map[k]; })
     .sort(function(a,b){ return a.name.localeCompare(b.name, "en", {sensitivity:"base"}); });
 
+  /* A background refresh must not wipe what is half typed, so remember the current
+     picks and put them back after the dropdowns are rebuilt. */
+  var keep={};
+  ["srcIn","payStat","payMeth","funds","payHit","fulfil","packed","stockUp","freeVial"]
+    .forEach(function(id){ var e=$(id); if(e) keep[id]=e.value; });
   fillSel("srcIn", OPTS.source, "", true);
   fillSel("payStat", OPTS.payStatus, pick(OPTS.payStatus, DEFAULTS.payStatus));
   fillSel("payMeth", OPTS.payMethod, "", true);
@@ -759,6 +790,9 @@ function build(){
   fillSel("packed", OPTS.packed, pick(OPTS.packed, DEFAULTS.packed));
   fillSel("stockUp", OPTS.stockUp, pick(OPTS.stockUp, DEFAULTS.stockUp));
   fillSel("freeVial", OPTS.freeVial, pick(OPTS.freeVial, DEFAULTS.freeVial));
+  if(REBUILDING) Object.keys(keep).forEach(function(id){
+    var e=$(id); if(e && keep[id] && e.value!==keep[id]) e.value=keep[id];
+  });
   /* Referrers keep their own referral tail so chains nest by themselves.
      Searchable dropdown rather than a datalist, because datalists barely work on
      iPhone. A brand new partner can still just be typed in. */
