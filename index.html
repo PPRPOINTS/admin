@@ -228,7 +228,8 @@ tr:last-child td{border-bottom:none}
         <div class="combo-list" id="custList"></div>
       </div>
       <div><label for="mobIn">Mobile</label><input type="tel" id="mobIn" autocomplete="off" placeholder="04..."></div>
-      <div class="combo" id="refCombo"><label for="refIn">Referred by</label><input type="text" id="refIn" autocomplete="off" spellcheck="false" placeholder="Search who referred them, or type a new partner"><div class="combo-list" id="refList"></div></div>
+      <div id="ptsCard" style="display:none;grid-column:1/-1;background:rgba(79,140,255,.07);border:1px solid rgba(79,140,255,.3);border-radius:11px;padding:12px 14px;margin-top:2px;font-size:13px;line-height:1.5"></div>
+    <div class="combo" id="refCombo"><label for="refIn">Referred by</label><input type="text" id="refIn" autocomplete="off" spellcheck="false" placeholder="Search who referred them, or type a new partner"><div class="combo-list" id="refList"></div></div>
       <div><label for="srcIn">Where the lead came from</label><select id="srcIn"></select></div>
     </div>
     <div class="echo" id="nameOut"></div>
@@ -340,6 +341,78 @@ var DEFAULTS = {payStatus:"Unpaid",fulfil:"Pending",packed:"No",stockUp:"No",pay
 /* ---------- state ---------- */
 var KEY="", URL_="";
 var DATA=null, RCOL={}, OPTS={}, PRODUCTS=[], CUSTOMERS=[], LINES=[];
+
+/* ---------- Their points, pulled from the same feed the customer sees ----------
+   Read only. Nothing here writes, it just saves opening the dashboard to check. */
+var REWARDS_EP="https://script.google.com/macros/s/AKfycby6GS7W7o7sFKceSUAxrYW6QHKvDyj8D9lljgDYtN3j_cqAEmg6gSj-kh0Oj5xrf_Dr7A/exec";
+var PTS_TIERS=[{min:100,pts:10},{min:300,pts:25},{min:500,pts:40}];
+var CREDIT_CAP=200, PER_ORDER_CAP=100;
+var REW=null, REW_FOR="", REW_BUSY=false, useFuturePts=false;
+
+function ptsFor(v){ var p=0; PTS_TIERS.forEach(function(t){ if(v>=t.min)p=t.pts; }); return p; }
+/* Must stay byte-identical to refCode() in the rewards script, or the lookup misses. */
+var REF_SALT="pprv1_9Fq2Kx";
+function refCodeFor(name){
+  var clean=String(name||"").replace(/\s*\(\s*referral\s+.+\)\s*$/i,"").trim().toLowerCase().replace(/\s+/g," ");
+  var str=clean+"|"+REF_SALT, h1=2166136261, h2=5381;
+  for(var i=0;i<str.length;i++){ var c=str.charCodeAt(i); h1=Math.imul(h1^c,16777619)>>>0; h2=(Math.imul(h2,33)+c)>>>0; }
+  return (("00000"+h1.toString(36)).slice(-5)+("00000"+h2.toString(36)).slice(-5));
+}
+function loadRewards(name){
+  var nm=String(name||"").trim();
+  if(!nm){ REW=null; REW_FOR=""; useFuturePts=false; paintPts(); return; }
+  if(REW_FOR===nm || REW_BUSY) return;
+  REW_FOR=nm; REW=null; REW_BUSY=true; useFuturePts=false; paintPts();
+  fetch(REWARDS_EP+"?k="+encodeURIComponent(refCodeFor(nm))+"&t="+Date.now())
+    .then(function(r){ return r.json(); })
+    .then(function(d){ REW_BUSY=false; REW=(d&&d.ok&&d.client)?d.client:false; paintPts(); })
+    .catch(function(){ REW_BUSY=false; REW=false; paintPts(); });
+}
+function orderTotal(){ return validLines().reduce(function(s,l){ return s+l.qty*l.price; },0); }
+/* Credit this order is about to earn them. Same maths as the dashboard calculator. */
+function futurePts(){
+  if(!REW) return 0;
+  var ms=Number(REW.monthSpend)||0, sub=orderTotal();
+  if(sub<=0) return 0;
+  if((Number(REW.balance)||0)>=CREDIT_CAP) return 0;   // already at the cap, nothing new earned
+  return Math.max(0, ptsFor(ms+sub)-ptsFor(ms));
+}
+function toggleFuturePts(el){
+  useFuturePts=!!el.checked;
+  var f=futurePts(), cur=num($("credit").value)||0;
+  if(useFuturePts) $("credit").value=(Math.min(PER_ORDER_CAP, cur+f)).toFixed(2);
+  else $("credit").value=(Math.max(0, cur-f)).toFixed(2) === "0.00" ? "" : Math.max(0,cur-f).toFixed(2);
+  render();
+}
+function applyBanked(){
+  if(!REW) return;
+  var avail=Number(REW.creditAvailable)||0, sub=orderTotal();
+  $("credit").value=Math.min(avail, PER_ORDER_CAP, sub||avail).toFixed(2);
+  render();
+}
+function paintPts(){
+  var box=$("ptsCard"); if(!box) return;
+  var nm=customerName();
+  if(!nm){ box.style.display="none"; return; }
+  box.style.display="block";
+  if(REW_BUSY){ box.innerHTML='<span style="color:var(--mut)">Loading their points\u2026</span>'; return; }
+  if(REW===false){ box.innerHTML='<span style="color:var(--mut)">No points page for this name yet. New customer, or the name does not match the sheet.</span>'; return; }
+  if(!REW){ box.style.display="none"; return; }
+  var avail=Number(REW.creditAvailable)||0, ms=Number(REW.monthSpend)||0;
+  var vials=Number(REW.freeVialCount)||0, refs=Number(REW.referralCount)||0;
+  var f=futurePts();
+  var row=function(l,v,c){ return '<div style="display:flex;justify-content:space-between;gap:12px"><span style="color:var(--mut)">'+l+'</span><span style="font-weight:600'+(c?';color:'+c:'')+'">'+v+'</span></div>'; };
+  var h='<div style="display:grid;gap:3px">'+
+    row("Credit available", money(avail), avail>0?"var(--green)":"")+
+    row("Spent this month", money(ms))+
+    row("Free vials taken", vials)+
+    row("Referrals", refs)+
+    '</div>';
+  if(avail>0) h+='<button type="button" class="btn btn-s btn-sm" style="margin-top:9px" onclick="applyBanked()">Use '+money(Math.min(avail,PER_ORDER_CAP))+' credit</button>';
+  if(f>0) h+='<label style="display:flex;align-items:center;gap:7px;margin-top:9px;cursor:pointer">'+
+    '<input type="checkbox" '+(useFuturePts?"checked":"")+' onchange="toggleFuturePts(this)"> This order earns them '+money(f)+', give it now</label>';
+  box.innerHTML=h;
+}
 var lineSeq=0, busy=false;
 
 /* ---------- helpers ---------- */
@@ -759,6 +832,8 @@ function render(){
   $("sStat").innerHTML='<span class="pill '+(st.toLowerCase()==="paid"?"pill-g":(st.toLowerCase().indexOf("part")>=0?"pill-a":"pill-r"))+'">'+esc(st)+'</span>';
 
   var nm=customerName();
+  loadRewards(nm);
+  paintPts();
   var typedHasRef=/\(Referral\b/i.test($("custIn").value.trim());
   $("nameOut").innerHTML = nm
     ? 'Column C reads <b>'+esc(nm)+'</b>' +
