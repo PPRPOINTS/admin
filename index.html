@@ -367,6 +367,25 @@ var CREDIT_CAP=200, PER_ORDER_CAP=100;
 var REW=null, REW_FOR="", REW_BUSY=false, REW_ERR="", useFuturePts=false;
 
 function ptsFor(v){ var p=0; PTS_TIERS.forEach(function(t){ if(v>=t.min)p=t.pts; }); return p; }
+/* The Random Key column on Customer_Orders. This is what the feed accepts now.
+   The old name-derived code has been switched off, so it is only kept as a last
+   resort for a customer whose key has not been filled in yet. */
+function randomKeyFor(nm){
+  if(!DATA_READY||RCOL.customer==null||RCOL.customer<0) return "";
+  var rows=(DATA&&DATA[CFG.ordersSheet])||[]; if(!rows.length) return "";
+  var hdr=findHeaderRow(rows);
+  var head=(rows[hdr]||[]).map(function(h){ return String(h==null?"":h).trim().toLowerCase(); });
+  var kc=head.indexOf("random key"); if(kc<0) return "";
+  var target=baseName(nm).trim().toLowerCase();
+  for(var i=hdr+1;i<rows.length;i++){
+    var r=rows[i]; if(!r) continue;
+    var full=String(r[RCOL.customer]||"").trim(); if(!full) continue;
+    if(baseName(full).trim().toLowerCase()!==target) continue;
+    var v=String(r[kc]||"").trim().toLowerCase();
+    if(/^[a-z0-9]{12,}$/.test(v)) return v;
+  }
+  return "";
+}
 /* Must stay byte-identical to refCode() in the rewards script, or the lookup misses. */
 var REF_SALT="pprv1_9Fq2Kx";
 function refCodeFor(name){
@@ -377,88 +396,87 @@ function refCodeFor(name){
 }
 /* Fetch their rewards. Apps Script can be slow or cold, so give it a generous window,
    retry once, and be honest about WHY it failed instead of blaming the name. */
-/* Two speed ups. Anything we can work out from the orders sheet already on the device
-   is shown straight away, and the last answer from the feed is kept per customer so a
-   repeat look up paints instantly while a fresh one comes down behind it. */
-function rewCacheKey(nm){ return "peps-rew-"+refCodeFor(nm); }
+/* ---------- their points ----------
+   One explicit status so the panel can never go blank or stick on loading.
+   REW_ST: "" nothing | "local" sheet only | "live" feed answered | "err" */
+var REW_ST="";
+function isYesish(v){ var t=String(v||"").trim().toLowerCase(); return t==="yes"||t==="y"||t==="true"||t==="1"; }
+function rewCacheKey(nm){ return "peps-rew-"+(randomKeyFor(nm)||refCodeFor(nm)); }
 function rewCacheGet(nm){
-  try{ var c=JSON.parse(localStorage.getItem(rewCacheKey(nm))||"null"); return (c&&c.client)?c:null; }catch(e){ return null; }
+  try{ var c=JSON.parse(localStorage.getItem(rewCacheKey(nm))||"null"); return (c&&c.client)?c.client:null; }catch(e){ return null; }
 }
 function rewCacheSet(nm,client){
   try{ localStorage.setItem(rewCacheKey(nm),JSON.stringify({at:Date.now(),client:client})); }catch(e){}
 }
-/* Free vials and referrals come straight out of Customer_Orders, which is already loaded,
-   so they never need to wait on the feed. Only the credit balance does. */
+/* Free vials, credit used and referrals come out of Customer_Orders, already on the
+   device, so they never wait on the network. Only the credit balance does. */
 function localRewards(nm){
   if(!DATA_READY||RCOL.customer==null||RCOL.customer<0) return null;
   var rows=(DATA&&DATA[CFG.ordersSheet])||[]; if(!rows.length) return null;
   var hdr=findHeaderRow(rows);
-  var target=String(nm||"").trim().toLowerCase();
-  var vials=0, used=0, refs={}, seenName=false;
+  var target=String(nm||"").trim().toLowerCase(), base=baseName(nm).toLowerCase();
+  var vials=0, used=0, refs={}, seen=false;
   for(var i=hdr+1;i<rows.length;i++){
     var r=rows[i]; if(!r) continue;
     var full=String(r[RCOL.customer]||"").trim(); if(!full) continue;
     var low=full.toLowerCase();
     if(low===target){
-      seenName=true;
+      seen=true;
       var q=Math.max(1,num(r[6])||1);
-      var fv=String(r[22]||"").trim().toLowerCase();
-      if(fv==="yes"||fv==="y"||fv==="true"||fv==="1"){
-        if(!/bacteriostatic|bac\s*water/i.test(String(r[5]||r[4]||""))) vials+=q;
-      }
+      if(isYesish(r[22]) && !/bacteriostatic|bac\s*water/i.test(String(r[5]||r[4]||""))) vials+=q;
       used+=num(r[23])||0;
     }
     var m=full.match(/\(\s*referral\s+(.+)\)\s*$/i);
-    if(m && baseName(m[1]).toLowerCase()===baseName(nm).toLowerCase()) refs[low]=1;
+    if(m && baseName(m[1]).toLowerCase()===base) refs[low]=1;
   }
-  if(!seenName) return null;
+  if(!seen) return null;
   return {freeVialCount:vials, creditUsed:used, referralCount:Object.keys(refs).length, partial:true};
 }
-function loadRewards(name, isRetry){
-  var nm=String(name||"").trim();
-  if(!nm){ REW=null; REW_FOR=""; REW_ERR=""; useFuturePts=false; paintPts(); return; }
-  if((REW_FOR===nm && !isRetry) || REW_BUSY) return;
-  REW_FOR=nm; REW_ERR=""; REW_BUSY=true; useFuturePts=false;
-  var cached=rewCacheGet(nm);
-  REW = cached ? cached.client : (localRewards(nm) || null);   // something on screen immediately
-  paintPts();
-
-  var ctrl=(typeof AbortController!=="undefined")?new AbortController():null;
-  var timer=setTimeout(function(){ if(ctrl) ctrl.abort(); }, 45000);
-  var opts=ctrl?{signal:ctrl.signal}:{};
-
-  fetch(REWARDS_EP+"?k="+encodeURIComponent(refCodeFor(nm))+"&t="+Date.now(), opts)
-    .then(function(r){
-      if(!r.ok) throw new Error("feed returned "+r.status);
-      return r.text();
-    })
-    .then(function(txt){
-      clearTimeout(timer);
-      var d=null;
-      try{ d=JSON.parse(txt); }catch(e){ throw new Error("feed did not return data"); }
-      REW_BUSY=false;
-      if(d&&d.ok&&d.client){ REW=d.client; REW_ERR=""; rewCacheSet(nm,d.client); }
-      else { REW=false; REW_ERR=(d&&d.error==="not_found")?"notfound":"other"; }
-      paintPts();
-    })
-    .catch(function(e){
-      clearTimeout(timer);
-      REW_BUSY=false;
-      if(!isRetry){ REW_FOR=""; loadRewards(nm,true); return; }   // one quiet retry, feed is often just cold
-      if(!REW){ REW=false; REW_ERR="net"; }                       // keep whatever is already showing
-      paintPts();
-    });
-}
-/* Wait until they stop typing. Firing on every keystroke meant "ta" got looked up and
-   came back with a not-found message while they were still halfway through the name. */
-var _rewTimer=null;
+var _rewTimer=null, _rewSeq=0;
 function queueRewards(nm){
-  clearTimeout(_rewTimer);
   var name=String(nm||"").trim();
-  if(!DATA_READY || name.length<2){ REW=null; REW_FOR=""; REW_ERR=""; paintPts(); return; }
-  _rewTimer=setTimeout(function(){ loadRewards(name); }, 600);
+  if(!DATA_READY || name.length<2){
+    clearTimeout(_rewTimer);
+    if(REW_ST){ REW=null; REW_ST=""; REW_FOR=""; paintPts(); }
+    return;
+  }
+  if(name===REW_FOR) return;                  // already on this person
+  clearTimeout(_rewTimer);
+  _rewTimer=setTimeout(function(){ loadRewards(name); }, 500);
 }
-function retryRewards(){ var nm=customerName(); REW_FOR=""; loadRewards(nm,true); }
+function loadRewards(name){
+  var nm=String(name||"").trim(); if(!nm) return;
+  clearTimeout(_rewTimer);
+  REW_FOR=nm;
+  var seq=++_rewSeq;                          // stale replies get dropped
+  var cached=rewCacheGet(nm), local=localRewards(nm);
+  REW = cached || local || null;
+  REW_ST = cached ? "live" : "local";
+  REW_BUSY = true; REW_ERR="";
+  paintPts();
+  var ctrl=(typeof AbortController!=="undefined")?new AbortController():null;
+  var killed=false;
+  var timer=setTimeout(function(){ killed=true; if(ctrl) ctrl.abort(); else finish(null,"timeout"); }, 20000);
+  function finish(client,err){
+    if(seq!==_rewSeq) return;
+    clearTimeout(timer);
+    REW_BUSY=false;
+    if(client){ REW=client; REW_ST="live"; REW_ERR=""; rewCacheSet(nm,client); }
+    else if(REW){ REW_ERR=err||"net"; }       // keep what is already showing
+    else { REW=null; REW_ST="err"; REW_ERR=err||"net"; }
+    paintPts();
+  }
+  var lookup = randomKeyFor(nm) || refCodeFor(nm);
+  fetch(REWARDS_EP+"?k="+encodeURIComponent(lookup)+"&t="+Date.now(), ctrl?{signal:ctrl.signal}:{})
+    .then(function(r){ if(!r.ok) throw new Error("http "+r.status); return r.text(); })
+    .then(function(txt){
+      var d=null; try{ d=JSON.parse(txt); }catch(e){}
+      if(d&&d.ok&&d.client) finish(d.client,null);
+      else finish(null, (d&&d.error==="old_link")?"oldlink":((d&&d.error==="not_found")?"notfound":"bad"));
+    })
+    .catch(function(){ finish(null, killed?"timeout":"net"); });
+}
+function retryRewards(){ REW_FOR=""; loadRewards(customerName()); }
 function orderTotal(){ return validLines().reduce(function(s,l){ return s+l.qty*l.price; },0); }
 /* Credit this order is about to earn them. Same maths as the dashboard calculator. */
 function futurePts(){
@@ -514,33 +532,39 @@ function checkCredit(){
 function paintPts(){
   var box=$("ptsCard"); if(!box) return;
   var nm=customerName();
-  if(!nm||!DATA_READY||nm.trim().length<2){ box.style.display="none"; return; }
-  if(!REW&&!REW_BUSY&&REW_FOR!==nm){ box.style.display="none"; return; }
+  if(!nm || !DATA_READY || nm.trim().length<2 || !REW_ST){ box.style.display="none"; return; }
   box.style.display="block";
-  if(REW_BUSY){ box.innerHTML='<span style="color:var(--mut)">Loading their points\u2026</span>'; return; }
-  if(REW===false){
+
+  if(REW_ST==="err"){
     var why = REW_ERR==="notfound"
       ? 'No points row for <b>'+esc(nm)+'</b> yet. Capitals and the referral tag do not matter, so this means they are not in the points block on the Dashboard tab.'
-      : 'Could not reach the points feed. It is usually just slow waking up.';
+      : REW_ERR==="oldlink" ? 'No Random Key on the sheet for <b>'+esc(nm)+'</b> yet. Run fillRandomKeys in Apps Script, then hit Reload sheet.'
+      : (REW_ERR==="timeout" ? 'The points feed did not answer in time.' : 'Could not reach the points feed.');
     box.innerHTML='<span style="color:var(--mut)">'+why+'</span>'+
       '<button type="button" class="btn btn-s btn-sm" style="margin-top:8px" onclick="retryRewards()">Try again</button>';
     return;
   }
-  if(!REW){ box.style.display="none"; return; }
+  if(!REW){ box.innerHTML='<span style="color:var(--mut)">Looking up their points\u2026</span>'; return; }
+
   var partial=!!REW.partial;
   var avail=Number(REW.creditAvailable)||0, ms=Number(REW.monthSpend)||0;
-  var vials=Number(REW.freeVialCount)||0, refs=Number(REW.referralCount)||0;
-  var f=futurePts();
+  var vials=Number(REW.freeVialCount)||0, refs=Number(REW.referralCount)||0, usedC=Number(REW.creditUsed)||0;
+  var f=partial?0:futurePts();
   var row=function(l,v,c){ return '<div style="display:flex;justify-content:space-between;gap:12px"><span style="color:var(--mut)">'+l+'</span><span style="font-weight:600'+(c?';color:'+c:'')+'">'+v+'</span></div>'; };
+  var creditVal = partial
+    ? (REW_BUSY?'<span style="color:var(--mut)">checking\u2026</span>':'<span style="color:var(--mut)">unavailable</span>')
+    : money(avail);
   var h='<div style="display:grid;gap:3px">'+
-    row("Credit available", partial?'<span style="color:var(--mut)">checking\u2026</span>':money(avail), (!partial&&avail>0)?"var(--green)":"")+
+    row("Credit available", creditVal, (!partial&&avail>0)?"var(--green)":"")+
     (partial?'':row("Spent this month", money(ms)))+
+    row("Credit already used", money(usedC))+
     row("Free vials taken", vials)+
     row("Referrals", refs)+
     '</div>';
   if(!partial&&avail>0) h+='<button type="button" class="btn btn-s btn-sm" style="margin-top:9px" onclick="applyBanked()">Use '+money(Math.min(avail,PER_ORDER_CAP))+' credit</button>';
   if(!partial&&f>0) h+='<label style="display:flex;align-items:center;gap:7px;margin-top:9px;cursor:pointer">'+
     '<input type="checkbox" '+(useFuturePts?"checked":"")+' onchange="toggleFuturePts(this)"> This order earns them '+money(f)+', give it now</label>';
+  if(partial&&!REW_BUSY) h+='<button type="button" class="btn btn-s btn-sm" style="margin-top:9px" onclick="retryRewards()">Get their credit balance</button>';
   box.innerHTML=h;
 }
 var lineSeq=0, busy=false;
