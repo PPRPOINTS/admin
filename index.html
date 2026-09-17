@@ -74,9 +74,14 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 .row input,.row select{min-width:0;background:transparent;border:0;outline:none;font-size:17px;color:var(--txt)}
 .row input{flex:1;padding:8px 0;text-align:right}
 .row input::placeholder,.note::placeholder{color:var(--ter)}
-.row select,.line-a select{appearance:none;-webkit-appearance:none;cursor:pointer;
+.line-a select,.pick::after{appearance:none;-webkit-appearance:none;cursor:pointer;
   background:transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='16' viewBox='0 0 10 16'%3E%3Cpath d='M1.5 6 5 2.5 8.5 6M1.5 10 5 13.5 8.5 10' fill='none' stroke='%238e8e93' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right center/10px 16px}
-.row select{margin-left:auto;flex:0 1 auto;max-width:64%;padding:8px 18px 8px 0;color:var(--dim);text-overflow:ellipsis}
+.pick{margin-left:auto;flex:0 1 auto;min-width:0;max-width:65%;display:inline-flex;align-items:center;gap:8px;color:var(--dim)}
+.pick-v{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pick-v.ph{color:var(--ter)}
+.pick::after{content:"";flex:none;width:10px;height:16px}
+.row .pick select{position:absolute;inset:0;width:100%;height:100%;margin:0;padding:0;opacity:0;cursor:pointer;appearance:none;-webkit-appearance:none}
+.row:has(.pick select:focus-visible){outline:2px solid var(--blue);outline-offset:-3px;border-radius:10px}
 .search svg{flex:none;width:18px;height:18px;stroke:var(--dim);fill:none;stroke-width:2.2;stroke-linecap:round}
 .search input{text-align:left;font-weight:500}
 
@@ -142,8 +147,8 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 .more > summary::-webkit-details-marker{display:none}
 .sum-t{flex:1}
 .sum-s{font-size:15px;color:var(--dim)}
-.chev{flex:none;width:8px;height:8px;border-right:2px solid var(--ter);border-bottom:2px solid var(--ter);transform:rotate(-45deg);margin:0 4px 0 2px;transition:transform .2s ease}
-.more[open] .chev{transform:rotate(45deg)}
+.chev{flex:none;width:16px;height:16px;fill:none;stroke:var(--ter);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;transition:transform .2s ease}
+.more[open] .chev{transform:rotate(90deg)}
 .more > .group{margin-top:12px}
 .callout{border-radius:12px;padding:12px 14px;font-size:15px;line-height:1.45;margin-top:12px}
 .callout.bad{background:var(--tint-red);color:var(--red)}
@@ -249,8 +254,8 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
   <section class="sec" aria-labelledby="hPay">
     <h2 class="sec-h" id="hPay">Payment</h2>
     <div class="group">
-      <div class="row"><span class="lbl">Status</span><div class="seg hide" data-for="payStat" role="group" aria-label="Payment status"></div><select id="payStat" aria-label="Payment status"></select></div>
-      <div class="row"><label class="lbl" for="payMeth">Paid by</label><select id="payMeth"></select></div>
+      <div class="row"><span class="lbl">Status</span><div class="seg hide" data-for="payStat" role="group" aria-label="Payment status"></div><span class="pick"><span class="pick-v"></span><select id="payStat" aria-label="Payment status"></select></span></div>
+      <div class="row"><label class="lbl" for="payMeth">Paid by</label><span class="pick"><span class="pick-v"></span><select id="payMeth"></select></span></div>
       <div class="row"><label class="lbl" for="credit">Store credit</label><input type="text" id="credit" inputmode="decimal" autocomplete="off" placeholder="$0.00"></div>
     </div>
     <p class="foot hide" id="cashNote"></p>
@@ -263,14 +268,14 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
   </section>
 
   <details class="more">
-    <summary><div class="row"><span class="sum-t">More details</span><span class="sum-s">Packing and stock</span><span class="chev" aria-hidden="true"></span></div></summary>
+    <summary><div class="row"><span class="sum-t">More details</span><span class="sum-s">Packing and stock</span><svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5"/></svg></div></summary>
     <div class="group">
-      <div class="row"><label class="lbl" for="fulfil">Order status</label><select id="fulfil"></select></div>
-      <div class="row"><span class="lbl">Packed</span><div class="seg hide" data-for="packed" role="group" aria-label="Packed"></div><select id="packed" aria-label="Packed"></select></div>
-      <div class="row"><span class="lbl">Stock updated</span><div class="seg hide" data-for="stockUp" role="group" aria-label="Stock updated"></div><select id="stockUp" aria-label="Stock updated"></select></div>
-      <div class="row"><span class="lbl">Payment received</span><div class="seg hide" data-for="payHit" role="group" aria-label="Payment received"></div><select id="payHit" aria-label="Payment received"></select></div>
-      <div class="row"><label class="lbl" for="funds">Money held by</label><select id="funds"></select></div>
-      <div class="row"><label class="lbl" for="srcIn">Lead source</label><select id="srcIn"></select></div>
+      <div class="row"><label class="lbl" for="fulfil">Order status</label><span class="pick"><span class="pick-v"></span><select id="fulfil"></select></span></div>
+      <div class="row"><span class="lbl">Packed</span><div class="seg hide" data-for="packed" role="group" aria-label="Packed"></div><span class="pick"><span class="pick-v"></span><select id="packed" aria-label="Packed"></select></span></div>
+      <div class="row"><span class="lbl">Stock updated</span><div class="seg hide" data-for="stockUp" role="group" aria-label="Stock updated"></div><span class="pick"><span class="pick-v"></span><select id="stockUp" aria-label="Stock updated"></select></span></div>
+      <div class="row"><span class="lbl">Payment received</span><div class="seg hide" data-for="payHit" role="group" aria-label="Payment received"></div><span class="pick"><span class="pick-v"></span><select id="payHit" aria-label="Payment received"></select></span></div>
+      <div class="row"><label class="lbl" for="funds">Money held by</label><span class="pick"><span class="pick-v"></span><select id="funds"></select></span></div>
+      <div class="row"><label class="lbl" for="srcIn">Lead source</label><span class="pick"><span class="pick-v"></span><select id="srcIn"></select></span></div>
     </div>
     <p class="foot">New orders start as pending and not packed. Only change these if that is not right.</p>
   </details>
@@ -747,7 +752,7 @@ function syncSegs(){
     if(!sel||!box) return;
     var opts=Array.prototype.map.call(sel.options,function(o){ return o.value; }).filter(function(v){ return v!==""; });
     var fits=opts.length>=2&&opts.length<=3&&opts.join("").length<=24;
-    sel.classList.toggle("hide", fits);
+    (sel.closest(".pick")||sel).classList.toggle("hide", fits);
     box.classList.toggle("hide", !fits);
     if(!fits) return;
     var sig=opts.join("|");
@@ -759,6 +764,16 @@ function syncSegs(){
       var on=b.dataset.v===sel.value;
       b.classList.toggle("on",on); b.setAttribute("aria-pressed",on?"true":"false");
     });
+  });
+}
+/* The menu itself is invisible and covers the row, so a tap anywhere opens it. This shows
+   the chosen value, sitting right against the arrow. */
+function syncPicks(){
+  Array.prototype.forEach.call(document.querySelectorAll(".pick"),function(p){
+    var sel=p.querySelector("select"), v=p.querySelector(".pick-v"); if(!sel||!v) return;
+    var o=sel.options[sel.selectedIndex];
+    v.textContent=o?o.text:"";
+    v.classList.toggle("ph", !sel.value);
   });
 }
 function optLike(list,want){ list=list||[]; for(var i=0;i<list.length;i++){ if(String(list[i]).trim().toLowerCase()===want) return list[i]; } return ""; }
@@ -1146,7 +1161,7 @@ function render(){
   var ready = rows.length>0 && customerName();
   $("submitBtn").disabled = !ready || busy;
   $("submitBtn").textContent = busy ? "Adding\u2026" : "Add order";
-  syncSegs();
+  syncSegs(); syncPicks();
 }
 
 /* ---------- submit ---------- */
