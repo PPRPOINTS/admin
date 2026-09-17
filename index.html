@@ -2,297 +2,291 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="PEPS Orders">
 <meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
 <meta name="referrer" content="no-referrer">
-<meta name="theme-color" content="#050507">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; connect-src https://script.google.com https://*.googleusercontent.com; style-src 'self' 'unsafe-inline'; font-src 'self'; script-src 'self' 'unsafe-inline'; img-src 'self' data:; form-action 'none'; base-uri 'none'">
-<title>Order Entry</title>
+<title>New order</title>
 <style>
 :root{
-  --bg:#050507; --rail:#0a0a0d; --card:#0e0e12; --card2:#14141a;
-  --bdr:#1e1e26; --bdr2:#2b2b36;
-  --txt:#f2f3f5; --dim:#8a8d94; --mut:#5b5e66;
-  --cyan:#22d3ee; --blue:#3b82f6; --purple:#8b5cf6;
-  --green:#2dd4a7; --red:#f87171; --amber:#fbbf24;
-  --rail-w:60px;
+  color-scheme:light dark;
+  --bg:#f2f2f7; --card:#fff; --raised:#fff; --seg-on:#fff;
+  --txt:#000; --dim:rgba(60,60,67,.62); --ter:rgba(60,60,67,.3);
+  --sep:rgba(60,60,67,.2); --fill:rgba(118,118,128,.12); --fill2:rgba(118,118,128,.2);
+  --blue:#0071e3; --green:#248a3d; --red:#d70015; --amber:#c93400; --on:#34c759;
+  --tint:rgba(0,113,227,.08); --tint-red:rgba(215,0,21,.07); --tint-amber:rgba(201,52,0,.08);
+  --bar:rgba(242,242,247,.82); --shadow:0 14px 34px rgba(0,0,0,.14),0 2px 6px rgba(0,0,0,.05);
+  --r:14px;
+  /* names the page code already uses */
+  --mut:var(--dim); --cyan:var(--blue); --bdr:var(--sep); --bdr2:var(--sep);
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#000; --card:#1c1c1e; --raised:#2c2c2e; --seg-on:#636366;
+    --txt:#fff; --dim:rgba(235,235,245,.62); --ter:rgba(235,235,245,.3);
+    --sep:rgba(84,84,88,.55); --fill:rgba(118,118,128,.24); --fill2:rgba(118,118,128,.34);
+    --blue:#0a84ff; --green:#30d158; --red:#ff453a; --amber:#ff9f0a; --on:#30d158;
+    --tint:rgba(10,132,255,.15); --tint-red:rgba(255,69,58,.14); --tint-amber:rgba(255,159,10,.13);
+    --bar:rgba(10,10,12,.78); --shadow:0 14px 34px rgba(0,0,0,.65);
+  }
 }
 *{margin:0;padding:0;box-sizing:border-box}
-html{-webkit-text-size-adjust:100%}
-body{
-  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,"Helvetica Neue",Arial,sans-serif;
-  background:var(--bg);color:var(--txt);min-height:100vh;line-height:1.5;
-  -webkit-font-smoothing:antialiased;
-}
-::selection{background:rgba(34,211,238,.25)}
+html{-webkit-text-size-adjust:100%;background:var(--bg)}
+body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Helvetica,Arial,sans-serif;
+  font-size:17px;line-height:1.35;letter-spacing:-.01em;background:var(--bg);color:var(--txt);
+  min-height:100vh;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent}
+button,input,select,textarea{font:inherit;color:inherit;letter-spacing:inherit}
+button{background:none;border:0;cursor:pointer}
+input[type=number]{-moz-appearance:textfield;font-variant-numeric:tabular-nums}
+input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:8px}
+.hide{display:none!important}
 
-/* ---------- rail ---------- */
-.rail{position:fixed;left:0;top:0;bottom:0;width:var(--rail-w);background:var(--rail);border-right:1px solid var(--bdr);
-  display:flex;flex-direction:column;align-items:center;padding:14px 0;gap:6px;z-index:60}
-.rail-mark{width:34px;height:34px;border-radius:9px;background:linear-gradient(140deg,var(--blue),var(--cyan));
-  display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#04121a;margin-bottom:10px}
-.rail-i{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;color:var(--mut)}
-.rail-i.on{background:rgba(59,130,246,.16);color:var(--cyan)}
-.rail-i svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
-.rail-sp{flex:1}
+/* page */
+.page{max-width:640px;margin:0 auto;padding:calc(8px + env(safe-area-inset-top)) 16px calc(132px + env(safe-area-inset-bottom))}
+.top-row{display:flex;align-items:center;justify-content:space-between;min-height:44px}
+.status{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--dim)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--green)}
+.tools{display:flex;gap:8px}
+.icon{width:36px;height:36px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:var(--blue);background:var(--fill)}
+.icon svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.icon:active,.btn:active,.cta:active,.add:active,.danger:active{opacity:.55}
+.large-title{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Helvetica Neue",sans-serif;
+  font-size:34px;font-weight:700;letter-spacing:-.022em;line-height:1.1;margin:4px 0 0}
+.sub{font-size:15px;color:var(--dim);margin-top:4px}
 
-/* ---------- shell ---------- */
-.wrap{margin-left:var(--rail-w);padding:26px 26px 90px;max-width:1320px}
-.masthead{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;
-  padding-bottom:20px;border-bottom:1px solid var(--bdr);margin-bottom:24px}
-.masthead h1{font-size:26px;font-weight:800;letter-spacing:-.3px;text-transform:uppercase}
-.masthead h1 b{color:var(--cyan);font-weight:800}
-.masthead .sub{font-size:13px;color:var(--dim);margin-top:3px}
-.mast-r{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
-.livewrap{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--dim);margin-right:4px}
-.dot{width:7px;height:7px;border-radius:50%;background:var(--green)}
+/* grouped lists */
+.sec{margin-top:30px}
+.sec-h{font-size:20px;font-weight:700;letter-spacing:-.018em;margin:0 4px 8px}
+.foot{font-size:13px;color:var(--dim);margin:8px 16px 0;line-height:1.4}
+.foot b{color:var(--txt);font-weight:600}
+.group{background:var(--card);border-radius:var(--r);position:relative}
+.row{position:relative;display:flex;align-items:center;gap:12px;min-height:50px;padding:6px 16px;text-align:left;width:100%}
+.row + .row::before,.line + .line::before,.lines:not(:empty) + .row::before{content:"";position:absolute;top:0;left:16px;right:0;border-top:.5px solid var(--sep)}
+.lbl{flex:none;font-size:17px}
+.row input,.row select{min-width:0;background:transparent;border:0;outline:none;font-size:17px;color:var(--txt)}
+.row input{flex:1;padding:8px 0;text-align:right}
+.row input::placeholder,.note::placeholder{color:var(--ter)}
+.row select,.line-a select{appearance:none;-webkit-appearance:none;cursor:pointer;
+  background:transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='16' viewBox='0 0 10 16'%3E%3Cpath d='M1.5 6 5 2.5 8.5 6M1.5 10 5 13.5 8.5 10' fill='none' stroke='%238e8e93' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right center/10px 16px}
+.row select{margin-left:auto;flex:0 1 auto;max-width:64%;padding:8px 18px 8px 0;color:var(--dim);text-overflow:ellipsis}
+.search svg{flex:none;width:18px;height:18px;stroke:var(--dim);fill:none;stroke-width:2.2;stroke-linecap:round}
+.search input{text-align:left;font-weight:500}
 
-/* ---------- buttons ---------- */
-.btn{padding:9px 17px;border:none;border-radius:9px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;
-  transition:background .15s,color .15s,border-color .15s}
-.btn:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
-.btn-p{background:var(--cyan);color:#052027}
-.btn-p:hover{background:#4ee0f5}
-.btn-p:disabled{background:var(--bdr2);color:var(--mut);cursor:not-allowed}
-.btn-s{background:var(--card2);border:1px solid var(--bdr2);color:var(--dim)}
-.btn-s:hover{background:#1b1b23;color:var(--txt)}
-.btn-d{background:transparent;border:1px solid var(--bdr2);color:var(--red)}
-.btn-d:hover{background:rgba(248,113,113,.1)}
-.btn-sm{font-size:12px;padding:7px 13px}
-.btn-ic{width:36px;padding:0;height:34px;display:inline-flex;align-items:center;justify-content:center}
-.btn-ic svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-
-/* ---------- fields ---------- */
-label{display:block;font-size:10.5px;font-weight:700;color:var(--dim);letter-spacing:.7px;text-transform:uppercase;margin-bottom:6px}
-input,select,textarea{width:100%;padding:10px 12px;background:#0a0a0e;border:1px solid var(--bdr);border-radius:9px;
-  color:var(--txt);font:inherit;font-size:14px;outline:none;transition:border-color .15s}
-input:hover,select:hover,textarea:hover{border-color:var(--bdr2)}
-input:focus,select:focus,textarea:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(34,211,238,.12)}
-input::placeholder{color:var(--mut)}
-select{cursor:pointer;appearance:none;padding-right:34px;
-  background-image:linear-gradient(45deg,transparent 50%,var(--dim) 50%),linear-gradient(135deg,var(--dim) 50%,transparent 50%);
-  background-position:calc(100% - 17px) 52%,calc(100% - 12px) 52%;background-size:5px 5px,5px 5px;background-repeat:no-repeat}
-option{background:#0e0e12;color:var(--txt)}
-textarea{resize:vertical;min-height:70px}
-input[type=number]{font-variant-numeric:tabular-nums}
-
-/* ---------- panels ---------- */
-.panel{background:var(--card);border:1px solid var(--bdr);border-radius:14px;padding:20px 20px 22px;margin-bottom:16px}
-.panel-h{display:flex;align-items:baseline;gap:11px;margin-bottom:3px;flex-wrap:wrap}
-.step{width:21px;height:21px;border-radius:50%;background:rgba(59,130,246,.16);color:var(--cyan);
-  font-size:11px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex:none;align-self:center}
-.panel-h h2{font-size:14.5px;font-weight:700;letter-spacing:.2px}
-.panel .hint{font-size:12.5px;color:var(--mut);margin:0 0 16px 32px}
-.grid{display:grid;gap:13px}
-.g2{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
-.g3{grid-template-columns:repeat(auto-fit,minmax(175px,1fr))}
-.g4{grid-template-columns:repeat(auto-fit,minmax(155px,1fr))}
-.echo{font-size:12.5px;color:var(--dim);margin-top:14px;padding:10px 13px;background:#0a0a0e;border:1px solid var(--bdr);border-radius:9px}
-.echo b{color:var(--cyan);font-weight:600}
-
-/* ---------- combo ---------- */
-.combo{position:relative}
-.combo-list{position:absolute;top:calc(100% + 5px);left:0;right:0;background:#101016;border:1px solid var(--bdr2);
-  border-radius:11px;max-height:262px;overflow-y:auto;z-index:50;display:none;box-shadow:0 18px 46px rgba(0,0,0,.72)}
+/* customer search */
+.combo-list{display:none;position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:40;background:var(--raised);
+  border-radius:var(--r);box-shadow:var(--shadow);max-height:min(340px,52vh);overflow-y:auto;-webkit-overflow-scrolling:touch;padding:4px 0}
 .combo-list.open{display:block}
-.combo-item{padding:10px 13px;cursor:pointer;font-size:13.5px;border-bottom:1px solid var(--bdr)}
-.combo-item:last-child{border-bottom:none}
-.combo-item:hover,.combo-item.hi{background:rgba(59,130,246,.13)}
-.combo-item small{display:block;color:var(--mut);font-size:11.5px;margin-top:2px;font-variant-numeric:tabular-nums}
-.combo-item.new{color:var(--green)}
+.combo-item{position:relative;padding:10px 16px;cursor:pointer}
+.combo-item + .combo-item::before{content:"";position:absolute;top:0;left:16px;right:0;border-top:.5px solid var(--sep)}
+.combo-item:hover,.combo-item.hi{background:var(--fill)}
+.ci-name{font-weight:600}
+.ci-tail{color:var(--dim);margin-left:6px}
+.ci-sub{font-size:13px;color:var(--dim);margin-top:1px;font-variant-numeric:tabular-nums}
+.combo-item.new{color:var(--blue);font-weight:600}
+.combo-item.muted{color:var(--dim);cursor:default}
 
-/* ---------- lines ---------- */
-.line{background:var(--card2);border:1px solid var(--bdr);border-radius:12px;padding:15px;margin-bottom:11px}
-.line-top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}
-.line-n{font-size:10.5px;font-weight:700;color:var(--mut);letter-spacing:.8px;text-transform:uppercase}
-.line-t{font-size:17px;font-weight:700;color:var(--green);font-variant-numeric:tabular-nums}
-.stock{font-size:11.5px;color:var(--mut);margin-top:7px}
+/* rewards */
+.points{margin-top:12px;background:var(--tint);border-radius:var(--r);padding:13px 16px;font-size:15px;line-height:1.5}
+.pts-h{font-weight:600;margin-bottom:4px}
+.btn{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:8px 16px;font-size:15px;font-weight:600;background:var(--tint);color:var(--blue)}
+.points .btn{background:var(--card)}
+
+/* products */
+.line{position:relative;padding:12px 16px}
+.line-a{display:flex;align-items:center;gap:10px}
+.line-a select{flex:1;min-width:0;border:0;outline:none;font-size:17px;font-weight:600;padding:6px 22px 6px 0;color:var(--txt);text-overflow:ellipsis}
+.line-a select.empty{color:var(--blue);font-weight:500}
+.del{flex:none;width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:var(--dim);background:var(--fill)}
+.del svg{width:11px;height:11px;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;fill:none}
+.line-b{display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap}
+.stepper{display:inline-flex;align-items:center;background:var(--fill);border-radius:10px;height:36px}
+.stepper button{width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;color:var(--txt)}
+.stepper button:disabled{opacity:.28;cursor:default}
+.stepper svg{width:14px;height:14px;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;fill:none}
+.stepper input{width:28px;text-align:center;background:transparent;border:0;outline:none;font-size:17px;font-weight:600;color:var(--txt)}
+.price{display:inline-flex;align-items:baseline;gap:1px;font-size:15px;color:var(--dim)}
+.price input{width:3.6em;margin-right:4px;background:transparent;border:0;border-bottom:1px solid transparent;outline:none;font-size:17px;color:var(--txt);padding:2px 0}
+.price input:focus{border-bottom-color:var(--blue)}
+.free{margin-left:auto;display:inline-flex;align-items:center;gap:9px;font-size:15px;color:var(--dim);cursor:pointer}
+.line-c{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-top:8px}
+.stock{font-size:13px;color:var(--dim)}
 .stock.low{color:var(--amber)}
 .stock.out{color:var(--red)}
+.amt{font-size:17px;font-weight:600;font-variant-numeric:tabular-nums}
+.line.is-free .amt{color:var(--green)}
+.line.is-free .price{opacity:.4}
+.add{color:var(--blue);font-size:17px;gap:10px}
+.add svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round}
 
-/* ---------- summary bar ---------- */
-.sum{position:sticky;bottom:0;background:rgba(14,14,18,.97);backdrop-filter:blur(12px);
-  border:1px solid var(--bdr2);border-radius:14px;padding:17px 20px;margin-top:20px;
-  box-shadow:0 -14px 40px rgba(0,0,0,.6);display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
-.sum-rows{display:flex;gap:30px;flex-wrap:wrap;align-items:flex-end}
-.sum-i .l{font-size:10px;font-weight:700;color:var(--dim);letter-spacing:.8px;text-transform:uppercase;margin-bottom:4px}
-.sum-i .v{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
-.sum-i .v.big{font-size:30px;color:var(--green);letter-spacing:-.5px}
-.sum-act{display:flex;gap:9px;flex-wrap:wrap}
+/* switch and segmented control */
+.switch{appearance:none;-webkit-appearance:none;flex:none;position:relative;width:51px;height:31px;border-radius:31px;background:var(--fill2);cursor:pointer;transition:background .2s ease}
+.switch::after{content:"";position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:#fff;box-shadow:0 3px 8px rgba(0,0,0,.15),0 1px 1px rgba(0,0,0,.16);transition:transform .2s ease}
+.switch:checked{background:var(--on)}
+.switch:checked::after{transform:translateX(20px)}
+.seg{display:inline-flex;margin-left:auto;background:var(--fill);border-radius:9px;padding:2px;gap:2px}
+.seg button{min-width:52px;padding:6px 12px;border-radius:7px;font-size:14px;font-weight:500;white-space:nowrap}
+.seg button.on{background:var(--seg-on);font-weight:600;box-shadow:0 3px 8px rgba(0,0,0,.12),0 1px 1px rgba(0,0,0,.04)}
 
-/* ---------- preview ---------- */
-.scroll{overflow-x:auto;border:1px solid var(--bdr);border-radius:11px}
-table{width:100%;border-collapse:collapse;font-size:12px}
-th{text-align:left;padding:9px 11px;font-size:9.5px;font-weight:700;color:var(--dim);letter-spacing:.7px;
-  text-transform:uppercase;background:#0a0a0e;border-bottom:1px solid var(--bdr);white-space:nowrap;position:sticky;top:0}
-th span{color:var(--cyan)}
-td{padding:9px 11px;border-bottom:1px solid var(--bdr);font-size:12px;white-space:nowrap;font-variant-numeric:tabular-nums}
-tr:last-child td{border-bottom:none}
-.empty{color:var(--mut);font-size:13px;padding:22px;text-align:center}
+/* notes, more, callouts */
+.note{display:block;width:100%;min-height:96px;padding:13px 16px;background:transparent;border:0;outline:none;resize:vertical;font-size:17px;line-height:1.4;color:var(--txt)}
+.more{display:block;margin-top:30px}
+.more > summary{list-style:none;cursor:pointer;display:block;background:var(--card);border-radius:var(--r)}
+.more > summary::-webkit-details-marker{display:none}
+.sum-t{flex:1}
+.sum-s{font-size:15px;color:var(--dim)}
+.chev{flex:none;width:8px;height:8px;border-right:2px solid var(--ter);border-bottom:2px solid var(--ter);transform:rotate(-45deg);margin:0 4px 0 2px;transition:transform .2s ease}
+.more[open] .chev{transform:rotate(45deg)}
+.more > .group{margin-top:12px}
+.callout{border-radius:12px;padding:12px 14px;font-size:15px;line-height:1.45;margin-top:12px}
+.callout.bad{background:var(--tint-red);color:var(--red)}
+.callout.bad div{color:var(--txt);margin-top:3px}
+.callout.warn{background:var(--tint-amber)}
+.callout.warn b{color:var(--amber)}
+.danger-wrap{margin-top:30px}
+.danger{color:var(--red);justify-content:center;font-size:17px}
 
-.pill{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700}
-.pill-g{background:rgba(45,212,167,.14);color:var(--green)}
-.pill-a{background:rgba(251,191,36,.14);color:var(--amber)}
-.pill-r{background:rgba(248,113,113,.14);color:var(--red)}
-.pill-b{background:rgba(59,130,246,.16);color:var(--cyan)}
+/* bottom bar */
+.bar{position:fixed;left:0;right:0;bottom:0;z-index:50;background:var(--bar);
+  -webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-top:.5px solid var(--sep)}
+.bar-in{max-width:640px;margin:0 auto;display:flex;align-items:center;gap:16px;padding:12px 16px calc(12px + env(safe-area-inset-bottom))}
+.tot{flex:1;min-width:0}
+.tot-v{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Helvetica Neue",sans-serif;font-size:28px;font-weight:700;letter-spacing:-.02em;line-height:1.05;font-variant-numeric:tabular-nums}
+.tot-m{font-size:13px;color:var(--dim);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cta{flex:none;min-width:148px;height:50px;padding:0 24px;border-radius:14px;background:var(--blue);color:#fff;font-size:17px;font-weight:600}
+.cta:disabled{background:var(--fill2);color:var(--ter);cursor:default;opacity:1}
 
-/* ---------- lock ---------- */
-.lock{max-width:410px;margin:13vh auto;background:var(--card);border:1px solid var(--bdr);border-radius:16px;padding:30px}
-.lock .badge{width:42px;height:42px;border-radius:11px;background:linear-gradient(140deg,var(--blue),var(--cyan));
-  display:flex;align-items:center;justify-content:center;margin-bottom:16px}
-.lock .badge svg{width:20px;height:20px;stroke:#04121a;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.lock h1{font-size:21px;font-weight:800;letter-spacing:-.2px;margin-bottom:5px}
-.lock p{font-size:13px;color:var(--dim);margin-bottom:20px}
-.lock .f{margin-bottom:13px}
-.err{color:var(--red);font-size:12.5px;margin-top:12px;display:none}
-.foot{font-size:11.5px;color:var(--mut);margin-top:14px;line-height:1.6}
+/* sign in */
+.lock{max-width:420px;margin:0 auto;padding:calc(11vh + env(safe-area-inset-top)) 20px 40px;text-align:center}
+.app-icon{width:76px;height:76px;border-radius:18px;margin:0 auto 18px;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(180deg,#3a97ff,#0066d6);box-shadow:0 8px 20px rgba(0,102,214,.25)}
+.app-icon svg{width:36px;height:36px;stroke:#fff;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.lock h1{font-size:28px;font-weight:700;letter-spacing:-.02em}
+.lock > p{color:var(--dim);margin:6px 0 24px}
+.lock .group{text-align:left}
+.lock .row label{flex:none;width:88px}
+.lock .row input{text-align:left}
+.cta.wide{width:100%;margin-top:16px}
+.err{display:none;color:var(--red);font-size:15px;margin-top:12px}
+.lock .foot{margin:14px 0 0;text-align:center}
 
-/* ---------- toast ---------- */
-.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:26px;background:#101016;border:1px solid var(--bdr2);
-  border-radius:11px;padding:14px 21px;font-size:13.5px;z-index:200;display:none;max-width:90vw;
-  box-shadow:0 18px 46px rgba(0,0,0,.72)}
-.toast.ok{border-color:var(--green);color:var(--green)}
-.toast.bad{border-color:var(--red);color:var(--red)}
-.toast.show{display:block}
-
-.hide{display:none!important}
+/* messages */
+.toast{display:none;position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:60;
+  max-width:calc(100vw - 32px);background:var(--raised);box-shadow:var(--shadow);border-radius:14px;padding:12px 18px;font-size:15px;font-weight:500;text-align:center}
+.toast.show{display:block;animation:pop .22s ease-out}
+.toast.ok{color:var(--green)}
+.toast.bad{color:var(--red)}
+@keyframes pop{from{opacity:0;transform:translate(-50%,8px)}to{opacity:1;transform:translate(-50%,0)}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
-@media(max-width:760px){
-  :root{--rail-w:0px}
-  .rail{display:none}
-  .wrap{padding:16px 14px 90px}
-  .masthead h1{font-size:21px}
-  .sum{padding:14px}
-  .sum-rows{gap:20px}
-  .sum-i .v.big{font-size:25px}
-  .panel .hint{margin-left:0}
-}
+@media (min-width:700px){.page{padding-top:28px}}
 </style>
 </head>
 <body>
 
-<!-- LOCK -->
+<!-- sign in -->
 <div class="lock" id="lock">
-  <div class="badge"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
-  <h1>Order entry</h1>
-  <p>Enter your access key to load the sheet.</p>
-  <div id="storeWarn" style="display:none;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.45);color:#fbbf24;border-radius:10px;padding:10px 12px;font-size:12.5px;line-height:1.45;margin-bottom:14px;text-align:left"></div>
-  <form id="lockForm" autocomplete="on" action="#" style="margin:0">
-    <div class="f"><label for="uIn">Script URL</label>
-      <input type="text" id="uIn" name="username" autocomplete="username" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="https://script.google.com/macros/s/.../exec"></div>
-    <div class="f"><label for="kIn">Access key</label>
-      <input type="password" id="kIn" name="password" autocomplete="current-password" spellcheck="false" placeholder="Paste key"></div>
-    <button class="btn btn-p" style="width:100%;padding:12px" id="unlockBtn" type="submit">Unlock</button>
+  <div class="app-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6.5 3h8l4 4v14h-12z"/><path d="M14.5 3v4h4"/><path d="M9.5 12.5h6M9.5 16.5h4"/></svg></div>
+  <h1>Orders</h1>
+  <p>Sign in with the same details as the dashboard.</p>
+  <div id="storeWarn" class="callout warn" style="display:none;text-align:left"></div>
+  <form id="lockForm" autocomplete="on" action="#">
+    <div class="group">
+      <div class="row"><label for="uIn">Link</label>
+        <input type="text" id="uIn" name="username" autocomplete="username" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Script link"></div>
+      <div class="row"><label for="kIn">Password</label>
+        <input type="password" id="kIn" name="password" autocomplete="current-password" spellcheck="false" placeholder="Required"></div>
+    </div>
+    <button class="cta wide" id="unlockBtn" type="submit">Sign in</button>
   </form>
   <div class="err" id="lockErr"></div>
-  <p class="foot">Same password as the dashboard. If you are already connected there, this page skips this screen.<br><span id="saveHint" style="display:none">Tip: let your phone save this, then it fills both fields in one tap.</span></p>
+  <p class="foot"><span id="saveHint" style="display:none">Let your phone save these and it fills them in next time.</span></p>
 </div>
 
-<!-- RAIL -->
-<div class="rail hide" id="rail">
-  <div class="rail-mark">P</div>
-  <div class="rail-i on" title="Order entry"><svg viewBox="0 0 24 24"><path d="M9 11H5a2 2 0 0 0-2 2v7h18v-7a2 2 0 0 0-2-2h-4"/><path d="M12 3v11"/><path d="m8.5 7.5 3.5-4 3.5 4"/></svg></div>
-  <div class="rail-i" title="Customers"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/></svg></div>
-  <div class="rail-i" title="Products"><svg viewBox="0 0 24 24"><path d="M21 8V5a1 1 0 0 0-.6-.9l-7.8-3.4a2 2 0 0 0-1.2 0L3.6 4.1A1 1 0 0 0 3 5v14a1 1 0 0 0 .6.9l7.8 3.4a2 2 0 0 0 1.2 0"/><path d="M3.3 4.6 12 9l8.7-4.4"/><path d="M12 9v12"/></svg></div>
-  <div class="rail-sp"></div>
-  <div class="rail-i" title="Locked"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
-</div>
-
-<!-- APP -->
-<div class="wrap hide" id="app">
-
-  <div class="masthead">
-    <div>
-      <h1>Order <b>Entry</b></h1>
-      <div class="sub" id="hdrSub">Loading</div>
-    </div>
-    <div class="mast-r">
-      <div class="livewrap" id="liveWrap"><span class="dot" id="liveDot"></span><span id="liveLbl">Connecting</span></div>
-      <button class="btn btn-s btn-sm" id="reloadBtn">Reload sheet</button>
-      <button class="btn btn-s btn-ic" id="lockBtn" title="Lock" aria-label="Lock">
-        <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></button>
+<!-- new order -->
+<main class="page hide" id="app">
+  <div class="top-row">
+    <div class="status" id="liveWrap"><span class="dot" id="liveDot"></span><span id="liveLbl">Connecting</span></div>
+    <div class="tools">
+      <button class="icon" id="reloadBtn" type="button" title="Reload" aria-label="Reload"><svg viewBox="0 0 24 24"><path d="M20.5 12a8.5 8.5 0 1 1-2.5-6"/><path d="M20.5 3.5V9H15"/></svg></button>
+      <button class="icon" id="lockBtn" type="button" title="Sign out" aria-label="Sign out"><svg viewBox="0 0 24 24"><rect x="4.5" y="11" width="15" height="10" rx="2.5"/><path d="M8 11V7.5a4 4 0 0 1 8 0V11"/></svg></button>
     </div>
   </div>
+  <h1 class="large-title">New order</h1>
+  <div class="sub" id="hdrSub">Loading</div>
 
-  <div class="panel">
-    <div class="panel-h"><span class="step">1</span><h2>Customer</h2></div>
-    <div class="hint">Pick someone you've sold to before, or type a new name.</div>
-    <div class="grid g2">
-      <div class="combo" id="custCombo">
-        <label for="custIn">Name</label>
-        <input type="text" id="custIn" autocomplete="off" spellcheck="false" placeholder="Search or type a new name">
-        <div class="combo-list" id="custList"></div>
+  <section class="sec" aria-labelledby="hCust">
+    <h2 class="sec-h" id="hCust">Customer</h2>
+    <div class="group">
+      <div class="row search combo" id="custCombo">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m20 20-4.8-4.8"/></svg>
+        <input type="text" id="custIn" autocomplete="off" spellcheck="false" autocapitalize="words" placeholder="Search or add a name" aria-label="Customer name">
+        <div class="combo-list" id="custList" role="listbox"></div>
       </div>
-      <div><label for="mobIn">Mobile</label><input type="tel" id="mobIn" autocomplete="off" placeholder="04..."></div>
-      <div id="ptsCard" style="display:none;grid-column:1/-1;background:rgba(79,140,255,.07);border:1px solid rgba(79,140,255,.3);border-radius:11px;padding:12px 14px;margin-top:2px;font-size:13px;line-height:1.5"></div>
-    <div class="combo" id="refCombo"><label for="refIn">Referred by</label><input type="text" id="refIn" autocomplete="off" spellcheck="false" placeholder="Search who referred them, or type a new partner"><div class="combo-list" id="refList"></div></div>
-      <div><label for="srcIn">Where the lead came from</label><select id="srcIn"></select></div>
+      <div class="row"><label class="lbl" for="mobIn">Mobile</label><input type="tel" id="mobIn" autocomplete="off" placeholder="Optional"></div>
+      <div class="row combo" id="refCombo"><label class="lbl" for="refIn">Referred by</label>
+        <input type="text" id="refIn" autocomplete="off" spellcheck="false" autocapitalize="words" placeholder="Nobody">
+        <div class="combo-list" id="refList" role="listbox"></div></div>
     </div>
-    <div class="echo" id="nameOut"></div>
-  </div>
+    <p class="foot hide" id="nameOut"></p>
+    <div class="points" id="ptsCard" style="display:none" aria-live="polite"></div>
+  </section>
 
-  <div class="panel">
-    <div class="panel-h"><span class="step">2</span><h2>Products</h2></div>
-    <div class="hint">One row goes into the sheet for each product.</div>
-    <div id="lines"></div>
-    <button class="btn btn-s btn-sm" id="addLine">Add another product</button>
-  </div>
-
-  <div class="panel">
-    <div class="panel-h"><span class="step">3</span><h2>Money</h2></div>
-    <div class="hint">New orders default to unpaid. Just set how they're paying.</div>
-    <div class="grid g4">
-      <div><label for="payStat">Payment status</label><select id="payStat"></select></div>
-      <div><label for="payMeth">How it's being paid</label><select id="payMeth"></select></div>
-      <div><label for="funds">Where the funds live</label><select id="funds"></select></div>
-      <div><label for="payHit">Payment account hit</label><select id="payHit"></select></div>
-      <div><label for="credit">Credit used</label><input type="number" id="credit" step="0.01" min="0" placeholder="0.00">
-        <div style="font-size:10.5px;color:var(--mut);margin-top:5px">Goes on the first product line only, so the sheet cannot count it twice</div>
-        <div id="creditWarn" style="display:none;background:rgba(248,113,113,.10);border:1px solid rgba(248,113,113,.45);color:#fca5a5;border-radius:9px;padding:10px 12px;font-size:12px;line-height:1.5;margin-top:7px"></div></div>
+  <section class="sec" aria-labelledby="hItems">
+    <h2 class="sec-h" id="hItems">Products</h2>
+    <div class="group">
+      <div class="lines" id="lines"></div>
+      <button class="row add" id="addLine" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M12 8v8M8 12h8"/></svg>Add another product</button>
     </div>
-    <div class="echo hide" id="cashNote"></div>
-  </div>
+  </section>
 
-  <div class="panel">
-    <div class="panel-h"><span class="step">4</span><h2>Fulfilment</h2></div>
-    <div class="hint">Leave these as they are for a fresh order.</div>
-    <div class="grid g4">
-      <div><label for="fulfil">Fulfilment status</label><select id="fulfil"></select></div>
-      <div><label for="packed">Packed yet</label><select id="packed"></select></div>
-      <div><label for="stockUp">Stock updated</label><select id="stockUp"></select></div>
-      <div><label for="freeVial">Free vial</label><select id="freeVial"></select></div>
+  <section class="sec" aria-labelledby="hPay">
+    <h2 class="sec-h" id="hPay">Payment</h2>
+    <div class="group">
+      <div class="row"><span class="lbl">Status</span><div class="seg hide" data-for="payStat" role="group" aria-label="Payment status"></div><select id="payStat" aria-label="Payment status"></select></div>
+      <div class="row"><label class="lbl" for="payMeth">Paid by</label><select id="payMeth"></select></div>
+      <div class="row"><label class="lbl" for="credit">Store credit</label><input type="text" id="credit" inputmode="decimal" autocomplete="off" placeholder="$0.00"></div>
     </div>
-    <div style="margin-top:14px"><label for="notes">Notes</label>
-      <textarea id="notes" placeholder="Anything worth remembering about this order"></textarea></div>
-  </div>
+    <p class="foot hide" id="cashNote"></p>
+    <div class="callout bad" id="creditWarn" style="display:none"></div>
+  </section>
 
-  <div class="panel">
-    <div class="panel-h"><span class="step">5</span><h2>What gets written</h2></div>
-    <div class="hint">Exactly these rows get appended to Customer_Orders.</div>
-    <div class="scroll"><table id="prevTbl"></table></div>
-  </div>
+  <section class="sec" aria-labelledby="hNotes">
+    <h2 class="sec-h" id="hNotes">Notes</h2>
+    <div class="group"><textarea class="note" id="notes" placeholder="Anything worth remembering" aria-label="Notes"></textarea></div>
+  </section>
 
-  <div class="sum">
-    <div class="sum-rows">
-      <div class="sum-i"><div class="l">Lines</div><div class="v" id="sLines">0</div></div>
-      <div class="sum-i"><div class="l">Units</div><div class="v" id="sUnits">0</div></div>
-      <div class="sum-i"><div class="l">Order total</div><div class="v big" id="sTotal">$0.00</div></div>
-      <div class="sum-i"><div class="l">Status</div><div class="v" style="font-size:14px" id="sStat">Unpaid</div></div>
+  <details class="more">
+    <summary><div class="row"><span class="sum-t">More details</span><span class="sum-s">Packing and stock</span><span class="chev" aria-hidden="true"></span></div></summary>
+    <div class="group">
+      <div class="row"><label class="lbl" for="fulfil">Order status</label><select id="fulfil"></select></div>
+      <div class="row"><span class="lbl">Packed</span><div class="seg hide" data-for="packed" role="group" aria-label="Packed"></div><select id="packed" aria-label="Packed"></select></div>
+      <div class="row"><span class="lbl">Stock updated</span><div class="seg hide" data-for="stockUp" role="group" aria-label="Stock updated"></div><select id="stockUp" aria-label="Stock updated"></select></div>
+      <div class="row"><span class="lbl">Payment received</span><div class="seg hide" data-for="payHit" role="group" aria-label="Payment received"></div><select id="payHit" aria-label="Payment received"></select></div>
+      <div class="row"><label class="lbl" for="funds">Money held by</label><select id="funds"></select></div>
+      <div class="row"><label class="lbl" for="srcIn">Lead source</label><select id="srcIn"></select></div>
     </div>
-    <div class="sum-act">
-      <button class="btn btn-p" id="submitBtn">Add order to sheet</button>
-      <button class="btn btn-s" id="copyBtn">Copy rows instead</button>
-      <button class="btn btn-d btn-sm" id="clearBtn">Clear</button>
-    </div>
-  </div>
+    <p class="foot">New orders start as pending and not packed. Only change these if that is not right.</p>
+  </details>
+  <select id="freeVial" class="hide" aria-hidden="true" tabindex="-1"></select>
 
+  <div class="group danger-wrap"><button class="row danger" id="clearBtn" type="button">Clear form</button></div>
+</main>
+
+<div class="bar hide" id="bar">
+  <div class="bar-in">
+    <div class="tot"><div class="tot-v" id="sTotal">$0.00</div><div class="tot-m" id="sMeta">Add a product to start</div></div>
+    <button class="cta" id="submitBtn" type="button" disabled>Add order</button>
+  </div>
 </div>
 
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
 "use strict";
@@ -367,32 +361,27 @@ var CREDIT_CAP=200, PER_ORDER_CAP=100;
 var REW=null, REW_FOR="", REW_BUSY=false, REW_ERR="", useFuturePts=false;
 
 function ptsFor(v){ var p=0; PTS_TIERS.forEach(function(t){ if(v>=t.min)p=t.pts; }); return p; }
-/* The Random Key column on Customer_Orders. This is what the feed accepts now.
-   The old name-derived code has been switched off, so it is only kept as a last
-   resort for a customer whose key has not been filled in yet. */
+/* Same rule as keyNorm_ in both scripts: capitals, spacing and a "(Referral ...)" tail
+   never split a person. */
+function keyNorm(n){ return String(n||"").replace(/\s*\(\s*referral\s+.+\)\s*$/i,"").trim().toLowerCase().replace(/\s+/g," "); }
+/* Their rewards key. The hub script sends every customer's key as its own list. */
 function randomKeyFor(nm){
-  if(!DATA_READY||RCOL.customer==null||RCOL.customer<0) return "";
-  var rows=(DATA&&DATA[CFG.ordersSheet])||[]; if(!rows.length) return "";
+  if(!DATA_READY||!DATA) return "";
+  var want=keyNorm(nm); if(!want) return "";
+  var sent=DATA._custKeys;
+  if(sent){ var k0=String(sent[want]||"").trim().toLowerCase(); return /^[a-z0-9]{12,}$/.test(k0)?k0:""; }
+  /* Older hub script with no list: read the key column instead. */
+  var rows=DATA[CFG.ordersSheet]||[]; if(!rows.length||RCOL.customer==null||RCOL.customer<0) return "";
   var hdr=findHeaderRow(rows);
   var head=(rows[hdr]||[]).map(function(h){ return String(h==null?"":h).trim().toLowerCase(); });
   var kc=head.indexOf("random key"); if(kc<0) return "";
-  var target=baseName(nm).trim().toLowerCase();
   for(var i=hdr+1;i<rows.length;i++){
     var r=rows[i]; if(!r) continue;
-    var full=String(r[RCOL.customer]||"").trim(); if(!full) continue;
-    if(baseName(full).trim().toLowerCase()!==target) continue;
+    if(keyNorm(r[RCOL.customer])!==want) continue;
     var v=String(r[kc]||"").trim().toLowerCase();
     if(/^[a-z0-9]{12,}$/.test(v)) return v;
   }
   return "";
-}
-/* Must stay byte-identical to refCode() in the rewards script, or the lookup misses. */
-var REF_SALT="pprv1_9Fq2Kx";
-function refCodeFor(name){
-  var clean=String(name||"").replace(/\s*\(\s*referral\s+.+\)\s*$/i,"").trim().toLowerCase().replace(/\s+/g," ");
-  var str=clean+"|"+REF_SALT, h1=2166136261, h2=5381;
-  for(var i=0;i<str.length;i++){ var c=str.charCodeAt(i); h1=Math.imul(h1^c,16777619)>>>0; h2=(Math.imul(h2,33)+c)>>>0; }
-  return (("00000"+h1.toString(36)).slice(-5)+("00000"+h2.toString(36)).slice(-5));
 }
 /* Fetch their rewards. Apps Script can be slow or cold, so give it a generous window,
    retry once, and be honest about WHY it failed instead of blaming the name. */
@@ -401,7 +390,7 @@ function refCodeFor(name){
    REW_ST: "" nothing | "local" sheet only | "live" feed answered | "err" */
 var REW_ST="";
 function isYesish(v){ var t=String(v||"").trim().toLowerCase(); return t==="yes"||t==="y"||t==="true"||t==="1"; }
-function rewCacheKey(nm){ return "peps-rew-"+(randomKeyFor(nm)||refCodeFor(nm)); }
+function rewCacheKey(nm){ return "peps-rew-"+(randomKeyFor(nm)||("n-"+keyNorm(nm))); }
 function rewCacheGet(nm){
   try{ var c=JSON.parse(localStorage.getItem(rewCacheKey(nm))||"null"); return (c&&c.client)?c.client:null; }catch(e){ return null; }
 }
@@ -449,7 +438,14 @@ function loadRewards(name){
   clearTimeout(_rewTimer);
   REW_FOR=nm;
   var seq=++_rewSeq;                          // stale replies get dropped
-  var cached=rewCacheGet(nm), local=localRewards(nm);
+  var key=randomKeyFor(nm), local=localRewards(nm);
+  if(!key){
+    /* No rewards link yet, so nothing to ask. A new customer gets one the moment
+       this order is added. */
+    REW=local||null; REW_ST=local?"nokey":"new"; REW_BUSY=false; REW_ERR="";
+    paintPts(); return;
+  }
+  var cached=rewCacheGet(nm);
   REW = cached || local || null;
   REW_ST = cached ? "live" : "local";
   REW_BUSY = true; REW_ERR="";
@@ -466,8 +462,7 @@ function loadRewards(name){
     else { REW=null; REW_ST="err"; REW_ERR=err||"net"; }
     paintPts();
   }
-  var lookup = randomKeyFor(nm) || refCodeFor(nm);
-  fetch(REWARDS_EP+"?k="+encodeURIComponent(lookup)+"&t="+Date.now(), ctrl?{signal:ctrl.signal}:{})
+  fetch(REWARDS_EP+"?k="+encodeURIComponent(key)+"&t="+Date.now(), ctrl?{signal:ctrl.signal}:{})
     .then(function(r){ if(!r.ok) throw new Error("http "+r.status); return r.text(); })
     .then(function(txt){
       var d=null; try{ d=JSON.parse(txt); }catch(e){}
@@ -477,7 +472,7 @@ function loadRewards(name){
     .catch(function(){ finish(null, killed?"timeout":"net"); });
 }
 function retryRewards(){ REW_FOR=""; loadRewards(customerName()); }
-function orderTotal(){ return validLines().reduce(function(s,l){ return s+l.qty*l.price; },0); }
+function orderTotal(){ return validLines().reduce(function(s,l){ return s+lineAmt(l); },0); }
 /* Credit this order is about to earn them. Same maths as the dashboard calculator. */
 function futurePts(){
   if(!REW) return 0;
@@ -489,14 +484,14 @@ function futurePts(){
 function toggleFuturePts(el){
   useFuturePts=!!el.checked;
   var f=futurePts(), cur=num($("credit").value)||0;
-  if(useFuturePts) $("credit").value=(Math.min(PER_ORDER_CAP, cur+f)).toFixed(2);
-  else $("credit").value=(Math.max(0, cur-f)).toFixed(2) === "0.00" ? "" : Math.max(0,cur-f).toFixed(2);
+  if(useFuturePts) $("credit").value="$"+(Math.min(PER_ORDER_CAP, cur+f)).toFixed(2);
+  else $("credit").value=(Math.max(0, cur-f)).toFixed(2) === "0.00" ? "" : "$"+Math.max(0,cur-f).toFixed(2);
   render();
 }
 function applyBanked(){
   if(!REW) return;
   var avail=Number(REW.creditAvailable)||0, sub=orderTotal();
-  $("credit").value=Math.min(avail, PER_ORDER_CAP, sub||avail).toFixed(2);
+  $("credit").value="$"+Math.min(avail, PER_ORDER_CAP, sub||avail).toFixed(2);
   render();
 }
 /* Terms check on the Credit used box. Three rules can be broken: more than they have,
@@ -537,14 +532,15 @@ function paintPts(){
 
   if(REW_ST==="err"){
     var why = REW_ERR==="notfound"
-      ? 'No points row for <b>'+esc(nm)+'</b> yet. Capitals and the referral tag do not matter, so this means they are not in the points block on the Dashboard tab.'
-      : REW_ERR==="oldlink" ? 'No Random Key on the sheet for <b>'+esc(nm)+'</b> yet. Run fillRandomKeys in Apps Script, then hit Reload sheet.'
-      : (REW_ERR==="timeout" ? 'The points feed did not answer in time.' : 'Could not reach the points feed.');
+      ? 'No rewards for <b>'+esc(nm)+'</b> yet. They show once their first order is on the sheet.'
+      : REW_ERR==="oldlink" ? 'Their rewards link is not set up yet. It sets itself up within a few minutes.'
+      : (REW_ERR==="timeout" ? 'Rewards took too long to answer.' : 'Could not reach rewards.');
     box.innerHTML='<span style="color:var(--mut)">'+why+'</span>'+
       '<button type="button" class="btn btn-s btn-sm" style="margin-top:8px" onclick="retryRewards()">Try again</button>';
     return;
   }
-  if(!REW){ box.innerHTML='<span style="color:var(--mut)">Looking up their points\u2026</span>'; return; }
+  if(REW_ST==="new"){ box.innerHTML='<span style="color:var(--mut)">New customer. Their rewards start with this order.</span>'; return; }
+  if(!REW){ box.innerHTML='<span style="color:var(--mut)">Looking up their rewards\u2026</span>'; return; }
 
   var partial=!!REW.partial;
   var avail=Number(REW.creditAvailable)||0, ms=Number(REW.monthSpend)||0;
@@ -552,9 +548,9 @@ function paintPts(){
   var f=partial?0:futurePts();
   var row=function(l,v,c){ return '<div style="display:flex;justify-content:space-between;gap:12px"><span style="color:var(--mut)">'+l+'</span><span style="font-weight:600'+(c?';color:'+c:'')+'">'+v+'</span></div>'; };
   var creditVal = partial
-    ? (REW_BUSY?'<span style="color:var(--mut)">checking\u2026</span>':'<span style="color:var(--mut)">unavailable</span>')
+    ? (REW_BUSY?'<span style="color:var(--mut)">checking\u2026</span>':'<span style="color:var(--mut)">'+(REW_ST==="nokey"?"not yet":"unavailable")+'</span>')
     : money(avail);
-  var h='<div style="display:grid;gap:3px">'+
+  var h='<div class="pts-h">Their rewards</div><div style="display:grid;gap:3px">'+
     row("Credit available", creditVal, (!partial&&avail>0)?"var(--green)":"")+
     (partial?'':row("Spent this month", money(ms)))+
     row("Credit already used", money(usedC))+
@@ -563,8 +559,10 @@ function paintPts(){
     '</div>';
   if(!partial&&avail>0) h+='<button type="button" class="btn btn-s btn-sm" style="margin-top:9px" onclick="applyBanked()">Use '+money(Math.min(avail,PER_ORDER_CAP))+' credit</button>';
   if(!partial&&f>0) h+='<label style="display:flex;align-items:center;gap:7px;margin-top:9px;cursor:pointer">'+
-    '<input type="checkbox" '+(useFuturePts?"checked":"")+' onchange="toggleFuturePts(this)"> This order earns them '+money(f)+', give it now</label>';
-  if(partial&&!REW_BUSY) h+='<button type="button" class="btn btn-s btn-sm" style="margin-top:9px" onclick="retryRewards()">Get their credit balance</button>';
+    '<input type="checkbox" class="switch" '+(useFuturePts?"checked":"")+' onchange="toggleFuturePts(this)"> Add the '+money(f)+' this order earns</label>';
+  if(partial&&!REW_BUSY) h+= REW_ST==="nokey"
+    ? '<div style="color:var(--mut);margin-top:8px">Their credit balance shows once their rewards link is set up. That happens by itself within a few minutes.</div>'
+    : '<button type="button" class="btn btn-s btn-sm" style="margin-top:9px" onclick="retryRewards()">Get their credit balance</button>';
   box.innerHTML=h;
 }
 var lineSeq=0, busy=false;
@@ -643,8 +641,8 @@ function baseName(full){
 
 function doUnlock(){
   var k=$("kIn").value.trim(), u=$("uIn").value.trim();
-  if(!k||!u){ showLockErr("Key and script URL are both needed."); return; }
-  if(u.indexOf("https://script.google.com/")!==0){ showLockErr("That does not look like an Apps Script URL."); return; }
+  if(!k||!u){ showLockErr("Enter the link and the password."); return; }
+  if(u.indexOf("https://script.google.com/")!==0){ showLockErr("That link is not right. It starts with https://script.google.com"); return; }
   KEY=k; URL_=u;
   var okU=lsSet("peps-script-url",u), okK=lsSet("peps-script-key",k);
   if(window.__credStore)window.__credStore(u,k);
@@ -658,7 +656,7 @@ function lockUp(){
   KEY=""; DATA=null;
   var ki=$("kIn"); if(ki) ki.value="";
   $("app").classList.add("hide");
-  $("rail").classList.add("hide");
+  $("bar").classList.add("hide");
   $("lock").classList.remove("hide");
   $("lockErr").style.display="none";
 }
@@ -667,7 +665,7 @@ function lockUp(){
 function start(){
   $("lock").classList.add("hide");
   $("app").classList.remove("hide");
-  $("rail").classList.remove("hide");
+  $("bar").classList.remove("hide");
   DATA_READY=false; setConn("loading");
   var sub=$("hdrSub"); sub.style.display="";
   loadData();
@@ -739,6 +737,33 @@ function fillSel(id,list,sel,blankFirst,blankLabel){
   });
   el.innerHTML = html;
 }
+
+/* Short choices show as one tap buttons. The select underneath stays the source of
+   truth, so everything else reads it exactly as before. */
+var SEGS=["payStat","payHit","packed","stockUp"];
+function syncSegs(){
+  SEGS.forEach(function(id){
+    var sel=$(id), box=document.querySelector('.seg[data-for="'+id+'"]');
+    if(!sel||!box) return;
+    var opts=Array.prototype.map.call(sel.options,function(o){ return o.value; }).filter(function(v){ return v!==""; });
+    var fits=opts.length>=2&&opts.length<=3&&opts.join("").length<=24;
+    sel.classList.toggle("hide", fits);
+    box.classList.toggle("hide", !fits);
+    if(!fits) return;
+    var sig=opts.join("|");
+    if(box.dataset.sig!==sig){
+      box.dataset.sig=sig;
+      box.innerHTML=opts.map(function(v){ return '<button type="button" data-v="'+esc(v)+'">'+esc(v)+'</button>'; }).join("");
+    }
+    Array.prototype.forEach.call(box.children,function(b){
+      var on=b.dataset.v===sel.value;
+      b.classList.toggle("on",on); b.setAttribute("aria-pressed",on?"true":"false");
+    });
+  });
+}
+function optLike(list,want){ list=list||[]; for(var i=0;i<list.length;i++){ if(String(list[i]).trim().toLowerCase()===want) return list[i]; } return ""; }
+function freeYes(){ return optLike(OPTS.freeVial,"yes")||"Yes"; }
+function freeNo(){ return optLike(OPTS.freeVial,"no")||"No"; }
 
 function build(){
   var orders = DATA[CFG.ordersSheet] || [];
@@ -903,26 +928,44 @@ function renderRefCombo(){
     /* never offer them as their own referrer */
     if(me && (c.name.toLowerCase()===me || full.toLowerCase()===meFull)) return false;
     if(!q) return true;
-    return c.name.toLowerCase().indexOf(q)>=0 || full.toLowerCase().indexOf(q)>=0;
-  }).slice(0,40);
+    return nameRank(c,q)<=2;          /* their own name only, not who referred them */
+  });
+  list=rankList(list,q).slice(0,40);
   refItems=list;
   var html="";
   var typed=$("refIn").value.trim();
   if(typed && !REFS.some(function(c){
         return c.name.toLowerCase()===q || String(c.full||c.name).toLowerCase()===q; })){
-    html+='<div class="combo-item new" data-new="1">Use new partner: '+esc(typed)+'</div>';
+    var useItem='<div class="combo-item new" data-new="1">Use \u201c'+esc(typed)+'\u201d</div>';
   }
-  list.forEach(function(c,i){
-    var full=String(c.full||c.name);
-    var tail=(full!==c.name)? full.slice(c.name.length).trim() : "";
-    html+='<div class="combo-item" data-i="'+i+'">'+esc(c.name)+
-          (tail?' <span style="color:var(--mut)">'+esc(tail)+'</span>':'')+
-          '<small>'+esc(c.mobile||"no number")+(c.orders?"  \u00b7  "+c.orders+" order"+(c.orders>1?"s":""):"")+'</small></div>';
-  });
-  if(!html) html='<div class="combo-item" style="color:var(--mut)">Nobody matches. Keep typing to use a new partner.</div>';
+  list.forEach(function(c,i){ html+=comboItemHtml(c,i); });
+  html+=useItem||"";
+  if(!html) html='<div class="combo-item muted">Nobody matches. Keep typing to add them.</div>';
   $("refList").innerHTML=html;
   $("refList").classList.add("open");
   refHi=-1;
+}
+/* 0 name starts with it, 1 a word starts with it, 2 anywhere in the name, 3 only in the
+   referral tail, 9 no match. */
+function nameRank(c,q){
+  var n=String(c.name||"").toLowerCase();
+  if(n.indexOf(q)===0) return 0;
+  if((" "+n).indexOf(" "+q)>=0) return 1;
+  if(n.indexOf(q)>=0) return 2;
+  return String(c.full||"").toLowerCase().indexOf(q)>=0 ? 3 : 9;
+}
+function rankList(list,q){
+  if(!q) return list;
+  return list.map(function(c,i){ return {c:c,r:nameRank(c,q),i:i}; })
+    .sort(function(a,b){ return a.r-b.r || a.i-b.i; }).map(function(x){ return x.c; });
+}
+function comboItemHtml(c,i){
+  var full=String(c.full||c.name);
+  var tail=(full!==c.name)? full.slice(c.name.length).trim() : "";
+  var sub=[c.mobile||"", c.orders ? c.orders+" order"+(c.orders>1?"s":"") : ""].filter(Boolean).join(", ");
+  return '<div class="combo-item" data-i="'+i+'" role="option"><span class="ci-name">'+esc(c.name)+'</span>'+
+    (tail?'<span class="ci-tail">'+esc(tail)+'</span>':'')+
+    (sub?'<div class="ci-sub">'+esc(sub)+'</div>':'')+'</div>';
 }
 function closeRefCombo(){ $("refList").classList.remove("open"); }
 function selectRef(c){
@@ -932,22 +975,18 @@ function selectRef(c){
 function renderCombo(){
   var q=$("custIn").value.trim().toLowerCase();
   var list=CUSTOMERS.filter(function(c){
-    if(!q) return true;
-    return c.name.toLowerCase().indexOf(q)>=0 || String(c.full||"").toLowerCase().indexOf(q)>=0;
-  }).slice(0,40);
+    return !q || nameRank(c,q)<9;
+  });
+  list=rankList(list,q).slice(0,40);
   comboItems=list;
   var html="";
   if(q && !CUSTOMERS.some(function(c){ return c.name.toLowerCase()===q || String(c.full||"").toLowerCase()===q; })){
-    html += '<div class="combo-item new" data-new="1">Add new customer: '+esc($("custIn").value.trim())+'</div>';
+    var addItem='<div class="combo-item new" data-new="1">Add \u201c'+esc($("custIn").value.trim())+'\u201d as a new customer</div>';
   }
-  list.forEach(function(c,i){
-    var tail = (c.full && c.full!==c.name) ? c.full.slice(c.name.length).trim() : "";
-    html += '<div class="combo-item" data-i="'+i+'">'+esc(c.name)+
-            (tail?' <span style="color:var(--mut)">'+esc(tail)+'</span>':'')+
-            '<small>'+esc(c.mobile||"no number")+(c.orders?"  ·  "+c.orders+" order"+(c.orders>1?"s":""):"")+'</small></div>';
-  });
-  if(!DATA_READY) html='<div class="combo-item" style="color:var(--amber)">Still loading your customers, give it a second\u2026</div>';
-  else if(!html) html='<div class="combo-item" style="color:var(--mut)">Nothing matches. Keep typing to add a new customer.</div>';
+  list.forEach(function(c,i){ html+=comboItemHtml(c,i); });
+  html+=addItem||"";
+  if(!DATA_READY) html='<div class="combo-item muted">Still loading your customers\u2026</div>';
+  else if(!html) html='<div class="combo-item muted">Nothing matches. Keep typing to add someone new.</div>';
   $("custList").innerHTML=html;
   $("custList").classList.add("open");
   comboHi=-1;
@@ -962,7 +1001,10 @@ function selectCustomer(c){
 }
 
 /* ---------- lines ---------- */
-function addLine(){ LINES.push({id:++lineSeq, sku:"", qty:1, price:0, manual:false}); renderLines(); render(); }
+function addLine(){ LINES.push({id:++lineSeq, sku:"", qty:1, price:0, manual:false, free:false}); renderLines(); render(); }
+function lineById(id){ return LINES.filter(function(x){ return String(x.id)===String(id); })[0]; }
+/* A free vial costs them nothing, so it never counts toward what they pay. */
+function lineAmt(l){ return l.free ? 0 : l.qty*l.price; }
 function removeLine(id){
   LINES=LINES.filter(function(l){ return l.id!==id; });
   if(!LINES.length) addLine(); else { renderLines(); render(); }
@@ -973,6 +1015,9 @@ function priceFor(sku){
   var cash=String($("payMeth").value||"").toLowerCase().indexOf("cash")>=0;
   return (cash && p.cash>0) ? p.cash : (p.net||0);
 }
+var ICON_MINUS='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg>';
+var ICON_PLUS='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
+var ICON_X='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
 function renderLines(){
   var html="";
   LINES.forEach(function(l,ix){
@@ -980,27 +1025,32 @@ function renderLines(){
     var stockTxt="", stockCls="";
     if(p){
       var left=p.onHand-l.qty;
-      stockTxt=p.onHand+" on hand, "+left+" left after this";
-      if(p.onHand<=0){ stockCls="out"; stockTxt="none on hand"; }
-      else if(left<0){ stockCls="out"; stockTxt="only "+p.onHand+" on hand, short by "+Math.abs(left); }
-      else if(left<=2){ stockCls="low"; }
+      if(p.onHand<=0){ stockCls="out"; stockTxt="Out of stock"; }
+      else if(left<0){ stockCls="out"; stockTxt="Only "+p.onHand+" in stock"; }
+      else { stockTxt=left+" left after this"; if(left<=2) stockCls="low"; }
     }
-    html += '<div class="line">'+
-      '<div class="line-top"><span class="line-n">Product '+(ix+1)+'</span>'+
-      '<span style="display:flex;gap:10px;align-items:center"><span class="line-t">'+money(l.qty*l.price)+'</span>'+
-      (LINES.length>1?'<button class="btn btn-d btn-sm" data-del="'+l.id+'">Remove</button>':'')+'</span></div>'+
-      '<div class="grid g3">'+
-        '<div style="grid-column:span 2;min-width:200px"><label>Product</label>'+
-          '<select data-sku="'+l.id+'"><option value="">Choose a product</option>'+
+    html+='<div class="line'+(l.free?' is-free':'')+'">'+
+      '<div class="line-a">'+
+        '<select data-sku="'+l.id+'" class="'+(l.sku?'':'empty')+'" aria-label="Product '+(ix+1)+'">'+
+          '<option value="">Choose a product</option>'+
           PRODUCTS.map(function(pr){
-            return '<option value="'+esc(pr.sku)+'"'+(pr.sku===l.sku?" selected":"")+'>'+esc(pr.label||pr.name||pr.sku)+
-                   (pr.status && pr.status.toLowerCase()!=="active"?" "+esc(pr.status):"")+'</option>';
-          }).join("")+'</select>'+
-          (stockTxt?'<div class="stock '+stockCls+'">'+esc(stockTxt)+'</div>':'')+
+            return '<option value="'+esc(pr.sku)+'"'+(pr.sku===l.sku?' selected':'')+'>'+esc(pr.label||pr.name||pr.sku)+
+                   (pr.status && pr.status.toLowerCase()!=="active"?", "+esc(pr.status.toLowerCase()):"")+'</option>';
+          }).join("")+
+        '</select>'+
+        (LINES.length>1?'<button type="button" class="del" data-del="'+l.id+'" aria-label="Remove this product">'+ICON_X+'</button>':'')+
+      '</div>'+
+      '<div class="line-b">'+
+        '<div class="stepper">'+
+          '<button type="button" data-step="-1" data-line="'+l.id+'" aria-label="One less"'+(l.qty<=1?' disabled':'')+'>'+ICON_MINUS+'</button>'+
+          '<input type="number" inputmode="numeric" min="1" step="1" value="'+l.qty+'" data-qty="'+l.id+'" aria-label="Quantity">'+
+          '<button type="button" data-step="1" data-line="'+l.id+'" aria-label="One more">'+ICON_PLUS+'</button>'+
         '</div>'+
-        '<div><label>Qty</label><input type="number" min="1" step="1" value="'+l.qty+'" data-qty="'+l.id+'"></div>'+
-        '<div><label>Price each</label><input type="number" min="0" step="0.01" value="'+(l.price||"")+'" data-price="'+l.id+'"></div>'+
-      '</div></div>';
+        '<label class="price">$<input type="number" inputmode="decimal" min="0" step="0.01" value="'+(l.price?Number(l.price).toFixed(2):"")+'" placeholder="0.00" data-price="'+l.id+'" aria-label="Price each">each</label>'+
+        '<label class="free">Free<input type="checkbox" class="switch" data-free="'+l.id+'"'+(l.free?' checked':'')+' aria-label="Free vial"></label>'+
+      '</div>'+
+      '<div class="line-c"><span class="stock '+stockCls+'">'+esc(stockTxt)+'</span><span class="amt">'+(l.free?'Free':money(l.qty*l.price))+'</span></div>'+
+    '</div>';
   });
   $("lines").innerHTML=html;
 }
@@ -1037,7 +1087,6 @@ function buildRows(){
   v0.packed=$("packed").value;
   v0.stockUp=$("stockUp").value;
   v0.payHit=$("payHit").value;
-  v0.freeVial=$("freeVial").value;
   v0.credit=$("credit").value.trim()==="" ? "" : num($("credit").value);
   v0.notes=$("notes").value.trim();
 
@@ -1048,6 +1097,7 @@ function buildRows(){
     var v={}; for(var k in v0) v[k]=v0[k];
     if(ix>0) v.credit="";
     v.sku=l.sku; v.qty=l.qty;
+    v.freeVial = l.free ? freeYes() : freeNo();   /* only the line that is free */
     var cells={};
     FIELDS.forEach(function(f){ if(v[f.k]!==undefined) cells[f.c]=v[f.k]; });
     return {cells:cells};
@@ -1058,12 +1108,10 @@ function render(){
   renderLines();
   var vl=validLines();
   var units=vl.reduce(function(s,l){ return s+l.qty; },0);
-  var total=vl.reduce(function(s,l){ return s+l.qty*l.price; },0);
-  $("sLines").textContent=vl.length;
-  $("sUnits").textContent=units;
+  var total=vl.reduce(function(s,l){ return s+lineAmt(l); },0);
   $("sTotal").textContent=money(total);
-  var st=$("payStat").value||"Unpaid";
-  $("sStat").innerHTML='<span class="pill '+(st.toLowerCase()==="paid"?"pill-g":(st.toLowerCase().indexOf("part")>=0?"pill-a":"pill-r"))+'">'+esc(st)+'</span>';
+  var st=String($("payStat").value||"Unpaid").toLowerCase();
+  $("sMeta").textContent = units ? units+(units===1?" item, ":" items, ")+st : "Add a product to start";
 
   var nm=customerName();
   queueRewards(nm);
@@ -1085,36 +1133,20 @@ function render(){
       wrap.style.display="";
     }
   }
-  $("nameOut").innerHTML = nm
-    ? 'Column C reads <b>'+esc(nm)+'</b>' +
-      (typedHasRef ? '<br>Referred by is hidden because the name already carries <b>'+esc((String($("custIn").value).match(/\(\s*Referral\s+(.+)\)\s*$/i)||["",""])[1].trim())+'</b>.' : '')
-    : 'Pick a customer from the list or type a new name.';
+  var savedTail=/\(\s*Referral\s+.+\)\s*$/i.test(nm);
+  $("nameOut").innerHTML = savedTail ? 'Saved as <b>'+esc(nm)+'</b>' : '';
+  $("nameOut").classList.toggle("hide", !savedTail);
 
   var cash=String($("payMeth").value||"").toLowerCase().indexOf("cash")>=0;
   var cn=$("cashNote");
   cn.classList.toggle("hide", !cash);
-  if(cash) cn.innerHTML='Cash selected, so prices pulled the <b>cash price</b> where the product has one.';
+  if(cash) cn.innerHTML='Cash prices applied where a product has one.';
 
   var rows=buildRows();
-  if(!rows.length){
-    $("prevTbl").innerHTML='<tr><td class="empty">Pick a product and the exact rows show up here.</td></tr>';
-  } else {
-    var shown=FIELDS.slice().sort(function(a,b){ return a.c-b.c; });
-    var head="<tr>"+shown.map(function(f){
-      return "<th><span>"+esc(colLetter(f.c))+"</span> "+esc(f.lbl)+"</th>";
-    }).join("")+"</tr>";
-    var body=rows.map(function(r){
-      return "<tr>"+shown.map(function(f){
-        var v=r.cells[f.c];
-        return "<td>"+esc(v===""||v==null?"—":v)+"</td>";
-      }).join("")+"</tr>";
-    }).join("");
-    $("prevTbl").innerHTML=head+body;
-  }
-
   var ready = rows.length>0 && customerName();
   $("submitBtn").disabled = !ready || busy;
-  $("submitBtn").textContent = busy ? "Adding" : ("Add order to sheet"+(rows.length>1?" ("+rows.length+" rows)":""));
+  $("submitBtn").textContent = busy ? "Adding\u2026" : "Add order";
+  syncSegs();
 }
 
 /* ---------- submit ---------- */
@@ -1127,7 +1159,7 @@ function submitOrder(){
     var p=PRODUCTS.filter(function(x){ return x.sku===l.sku; })[0];
     return p && p.onHand-l.qty<0;
   });
-  if(short.length && !confirm("Not enough stock on hand for "+short.length+" line(s). Add the order anyway?")) return;
+  if(short.length && !confirm((short.length===1?"One product is":short.length+" products are")+" short on stock. Add the order anyway?")) return;
 
   busy=true; render();
   var payload={
@@ -1143,35 +1175,19 @@ function submitOrder(){
   .then(function(txt){
     var j=null; try{ j=JSON.parse(txt); }catch(e){}
     if(j && j.ok){
-      toast("Added "+j.added+" row"+(j.added>1?"s":"")+" to the sheet.","ok");
+      toast("Order added","ok");
       clearForm(true);
       loadData();
     } else if(j && j.error){
-      toast("Sheet said no: "+j.error,"bad");
+      toast(j.error==="unauthorized" ? "Signed out. Sign in again, nothing was saved." : "Could not add the order. "+j.error,"bad");
     } else {
-      toast("Sent, but the sheet did not confirm. Check Customer_Orders before sending again.","bad");
+      toast("Not sure it saved. Check the sheet before adding it again.","bad");
     }
   })
   .catch(function(err){
-    toast("Could not reach the script: "+err.message+". Use Copy rows and paste it in.","bad");
+    toast("No connection. Nothing was saved, try again.","bad");
   })
   .finally(function(){ busy=false; render(); });
-}
-
-function copyRows(){
-  var rows=buildRows();
-  if(!rows.length){ toast("Nothing to copy yet.","bad"); return; }
-  var maxIx=0; FIELDS.forEach(function(f){ if(f.c>maxIx) maxIx=f.c; });
-  var tsv=rows.map(function(r){
-    var arr=[];
-    for(var i=0;i<=maxIx;i++){ var v=r.cells[i]; arr.push(v===undefined||v===null?"":String(v)); }
-    return arr.join("\t");
-  }).join("\n");
-  navigator.clipboard.writeText(tsv).then(function(){
-    toast("Rows copied. Click column A on the next empty row and paste.","ok");
-  }).catch(function(){
-    window.prompt("Copy this and paste into the sheet:", tsv);
-  });
 }
 
 function clearForm(keepSettings){
@@ -1255,9 +1271,19 @@ $("lines").addEventListener("change", function(e){
     l=LINES.filter(function(x){ return x.id==t.dataset.price; })[0];
     if(l){ l.price=num(t.value); l.manual=true; }
     render();
+  } else if(t.dataset.free){
+    l=lineById(t.dataset.free);
+    if(l) l.free=!!t.checked;
+    render();
   }
 });
 $("lines").addEventListener("click", function(e){
+  var st=e.target.closest("[data-step]");
+  if(st){
+    var sl=lineById(st.dataset.line);
+    if(sl){ sl.qty=Math.max(1,(sl.qty||1)+parseInt(st.dataset.step,10)); render(); }
+    return;
+  }
   var b=e.target.closest("[data-del]"); if(!b) return;
   removeLine(parseInt(b.dataset.del,10));
 });
@@ -1270,7 +1296,17 @@ $("payMeth").addEventListener("change", function(){
   .forEach(function(id){ $(id).addEventListener("input", render); $(id).addEventListener("change", render); });
 
 $("submitBtn").addEventListener("click", submitOrder);
-$("copyBtn").addEventListener("click", copyRows);
+document.addEventListener("click", function(e){
+  var b=e.target.closest(".seg button"); if(!b) return;
+  var sel=$(b.parentNode.dataset.for); if(!sel||sel.value===b.dataset.v) return;
+  sel.value=b.dataset.v;
+  sel.dispatchEvent(new Event("change",{bubbles:true}));
+});
+/* Credit reads as money once they move on. */
+$("credit").addEventListener("blur", function(){
+  var v=$("credit").value.trim(); if(v==="") return;
+  var n=num(v); $("credit").value = n>0 ? "$"+n.toFixed(2) : ""; render();
+});
 $("clearBtn").addEventListener("click", function(){ if(confirm("Clear the form?")) clearForm(false); });
 $("reloadBtn").addEventListener("click", function(){ loadData(); });
 $("lockBtn").addEventListener("click", lockUp);
@@ -1297,8 +1333,8 @@ window.addEventListener("beforeunload", function(e){
     var b=document.createElement("button");
     b.type="button"; b.textContent=txt;
     b.style.cssText="position:absolute;right:7px;top:50%;transform:translateY(-50%);z-index:3;"+
-      "background:rgba(255,255,255,.10);color:#cbd5e1;border:0;border-radius:7px;padding:6px 10px;"+
-      "font-size:11px;font-weight:600;cursor:pointer;-webkit-appearance:none;line-height:1";
+      "background:var(--fill);color:var(--blue);border:0;border-radius:8px;padding:6px 10px;"+
+      "font-size:13px;font-weight:600;cursor:pointer;-webkit-appearance:none;line-height:1";
     b.addEventListener("click",onTap);
     return b;
   }
@@ -1361,10 +1397,8 @@ window.addEventListener("beforeunload", function(e){
   var iOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
   if(iOS&&!standalone&&needsLogin){
     var tip=document.createElement("p");
-    tip.style.cssText="font-size:12px;line-height:1.55;margin:14px 0 0;text-align:left;background:rgba(251,191,36,.10);border:1px solid rgba(251,191,36,.35);border-radius:10px;padding:11px 13px";
-    tip.innerHTML='<b style="color:#fbbf24">Sick of typing this in?</b><br>'+
-                  'Tap Share, then Add to Home Screen, then open it from that icon from now on.<br>'+
-                  'iPhone wipes the saved login for any normal site you have not opened in 7 days. A home screen copy is left alone, so it stays signed in.';
+    tip.className="callout warn"; tip.style.textAlign="left";
+    tip.innerHTML='<b>Stay signed in</b><br>Tap Share, then Add to Home Screen, and open it from that icon. iPhone forgets logins for sites you have not opened in 7 days, but leaves home screen apps alone.';
     F.parentNode.insertBefore(tip,F.nextSibling);
   }
 })();
