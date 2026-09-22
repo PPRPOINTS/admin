@@ -294,6 +294,12 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
+// Never run inside another site's page. These pages are opened directly, so a frame can only
+// mean another site is wrapping them to get at the data. Stops before anything is read.
+(function(){var framed=true;try{framed=window.top!==window.self;}catch(e){}
+  if(!framed)return;
+  document.addEventListener("DOMContentLoaded",function(){document.body.innerHTML='<p style="padding:40px;font-family:sans-serif;color:#8b8fa3">Open this page directly.</p>';});
+  throw new Error("Framed by another page, stopped");})();
 "use strict";
 
 /* ---------- config ---------- */
@@ -333,7 +339,7 @@ var FALLBACK = {
   source:    ["Instagram","Facebook","Referral","Word of Mouth","Repeat Customer","Website","Other"],
   payStatus: ["Unpaid","Part Paid","Paid"],
   payMethod: ["Bank Transfer","Cash","PayPal","Card","Crypto"],
-  funds:     ["Bank","PayPal","Cash","Max","Bon","Jord"],
+  funds:     ["Bank","Cash","Other"],   // the sheet's own list is used whenever it has one
   fulfil:    ["Pending","Packed","Sent","Delivered","Cancelled"],
   packed:    ["No","Yes"], stockUp:["No","Yes"], payHit:["No","Yes"], freeVial:["No","Yes"]
 };
@@ -614,9 +620,9 @@ function toast(msg,kind){
 }
 
 /* Strips a "(Referral ...)" tail no matter how deeply it nests, so
-   "Emily Wonka (Referral Katie Wonka (Referral Monique))" gives "Emily Wonka" */
+   "Person A (Referral Person B (Referral Person C))" gives "Person A" */
 /* The same person can appear spelled several ways across the sheets, for example
-   "Talia (Referral Nat)" in one tab and "talia (referral nat)" in another. Keep the
+   "Person A (Referral Person B)" in one tab and "person a (referral person b)" in another. Keep the
    longest one, and when two are the same length keep the one with proper capitals,
    so picking them from the list never drops the caps. */
 function capScore(s){
@@ -1082,13 +1088,13 @@ function renderLines(){
 }
 
 /* ---------- compute ---------- */
-/* Exactly: Jordon A (Referral Cara W)
+/* Exactly: Person A (Referral Person B)
    If the referrer was referred too, their stored name already carries their own
-   tail, so it nests on its own: Emily Wonka (Referral Katie Wonka (Referral Monique)) */
+   tail, so it nests on its own: Person A (Referral Person B (Referral Person C)) */
 /* The name field holds the exact string that lands in column C.
    Picking an existing customer puts their full stored name in, referral tail and all,
    because that is the string the rest of the system matches on.
-   Typing a fresh name and choosing a referral builds:  Jordon A (Referral Cara W) */
+   Typing a fresh name and choosing a referral builds:  Person A (Referral Person B) */
 function customerName(){
   var typed=$("custIn").value.trim();
   var ref=$("refIn").value.trim();
