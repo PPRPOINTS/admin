@@ -362,7 +362,7 @@ function setConn(state){
    Read only. Nothing here writes, it just saves opening the dashboard to check. */
 var REWARDS_EP="https://script.google.com/macros/s/AKfycby6GS7W7o7sFKceSUAxrYW6QHKvDyj8D9lljgDYtN3j_cqAEmg6gSj-kh0Oj5xrf_Dr7A/exec";
 var PTS_TIERS=[{min:100,pts:10},{min:300,pts:25},{min:500,pts:40}];
-var CREDIT_CAP=200, PER_ORDER_CAP=100;
+var CREDIT_CAP=200, PER_ORDER_CAP=100, OC_MIN_PAY=20;   // same as the dashboard
 var REW=null, REW_FOR="", REW_BUSY=false, REW_ERR="", useFuturePts=false;
 
 function ptsFor(v){ var p=0; PTS_TIERS.forEach(function(t){ if(v>=t.min)p=t.pts; }); return p; }
@@ -409,7 +409,7 @@ function localRewards(nm){
   var rows=(DATA&&DATA[CFG.ordersSheet])||[]; if(!rows.length) return null;
   var hdr=findHeaderRow(rows);
   var target=String(nm||"").trim().toLowerCase(), base=baseName(nm).toLowerCase();
-  var vials=0, used=0, refs={}, seen=false;
+  var vials=0, used=0, refs={}, seen=false, seenCr={};
   for(var i=hdr+1;i<rows.length;i++){
     var r=rows[i]; if(!r) continue;
     var full=String(r[RCOL.customer]||"").trim(); if(!full) continue;
@@ -418,7 +418,8 @@ function localRewards(nm){
       seen=true;
       var q=Math.max(1,num(r[6])||1);
       if(isYesish(r[22]) && !/bacteriostatic|bac\s*water/i.test(String(r[5]||r[4]||""))) vials+=q;
-      used+=num(r[23])||0;
+      var cu=num(r[23])||0, ck=String(r[0]||"").trim()+"|"+cu;   // old rows copied one credit onto every line
+      if(cu>0&&!seenCr[ck]){ seenCr[ck]=1; used+=cu; }
     }
     var m=full.match(/\(\s*referral\s+(.+)\)\s*$/i);
     if(m && baseName(m[1]).toLowerCase()===base) refs[low]=1;
@@ -483,7 +484,7 @@ function futurePts(){
   if(!REW) return 0;
   var ms=Number(REW.monthSpend)||0, sub=orderTotal();
   if(sub<=0) return 0;
-  if((Number(REW.balance)||0)>=CREDIT_CAP) return 0;   // already at the cap, nothing new earned
+  if((Number(REW.creditAvailable)||0)>=CREDIT_CAP) return 0;   // balance already full, nothing new earned
   return Math.max(0, ptsFor(ms+sub)-ptsFor(ms));
 }
 function toggleFuturePts(el){
@@ -493,10 +494,18 @@ function toggleFuturePts(el){
   else $("credit").value=(Math.max(0, cur-f)).toFixed(2) === "0.00" ? "" : "$"+Math.max(0,cur-f).toFixed(2);
   render();
 }
+/* What the Use credit button puts in: their balance, at most $100, and never the whole
+   order. If credit would cover all of it, it leaves $20 to pay, same as the dashboard. */
+function bankedUse(){
+  if(!REW) return 0;
+  var c=Math.min(Number(REW.creditAvailable)||0, PER_ORDER_CAP), sub=orderTotal();
+  if(sub>0){ c=Math.min(c,sub); if(c>=sub-0.005) c=Math.max(0,sub-OC_MIN_PAY); }
+  return Math.round(c*100)/100;
+}
 function applyBanked(){
   if(!REW) return;
-  var avail=Number(REW.creditAvailable)||0, sub=orderTotal();
-  $("credit").value="$"+Math.min(avail, PER_ORDER_CAP, sub||avail).toFixed(2);
+  var c=bankedUse();
+  $("credit").value=c>0?"$"+c.toFixed(2):"";
   render();
 }
 /* Terms check on the Credit used box. Three rules can be broken: more than they have,
@@ -516,13 +525,14 @@ function checkCredit(){
               " instead. The remaining "+money(c-PER_ORDER_CAP)+" stays in their balance for next time.</div>");
   }
   if(sub>0&&c>=sub-0.005){
-    var dropTo=Math.max(0,sub-1);
+    var dropTo=Math.max(0,sub-OC_MIN_PAY);
     /* Adding one cheap item does not fix it on its own. It only becomes payable once the
        order passes what credit can cover, which is their balance or the $100 cap. */
     var usable=Math.min(avail!=null?avail:PER_ORDER_CAP, PER_ORDER_CAP);
     var needed=Math.max(0, usable-sub+1);
     msgs.push("<b>Credit is covering the whole order.</b> The terms say credit rides alongside a purchase, it does not pay for one outright."+
-              "<div>Type "+money(dropTo)+" instead, so there is still something to pay.</div>"+
+              (dropTo>0?"<div>Type "+money(dropTo)+" instead, so there is "+money(sub-dropTo)+" to pay.</div>"
+                       :"<div>This order is too small to use credit on, so leave it off this one.</div>")+
               (needed>0?"<div>Or add "+money(needed)+" more of product. Credit can only ever cover "+money(usable)+" of an order.</div>":""));
   }
   if(!msgs.length){ box.style.display="none"; box.innerHTML=""; return; }
@@ -562,7 +572,8 @@ function paintPts(){
     row("Free vials taken", vials)+
     row("Referrals", refs)+
     '</div>';
-  if(!partial&&avail>0) h+='<button type="button" class="btn btn-s btn-sm" style="margin-top:9px" onclick="applyBanked()">Use '+money(Math.min(avail,PER_ORDER_CAP))+' credit</button>';
+  var bu=bankedUse();
+  if(!partial&&avail>0&&bu>0) h+='<button type="button" class="btn btn-s btn-sm" style="margin-top:9px" onclick="applyBanked()">Use '+money(bu)+' credit</button>';
   if(!partial&&f>0) h+='<label style="display:flex;align-items:center;gap:7px;margin-top:9px;cursor:pointer">'+
     '<input type="checkbox" class="switch" '+(useFuturePts?"checked":"")+' onchange="toggleFuturePts(this)"> Add the '+money(f)+' this order earns</label>';
   if(partial&&!REW_BUSY) h+= REW_ST==="nokey"
