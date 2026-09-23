@@ -234,6 +234,7 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
         <input type="text" id="custIn" autocomplete="off" spellcheck="false" autocapitalize="words" placeholder="Search or add a name" aria-label="Customer name">
         <div class="combo-list" id="custList" role="listbox"></div>
       </div>
+      <div class="row"><span class="lbl">Lead source</span><div class="seg hide" data-for="srcIn" role="group" aria-label="Lead source"></div><span class="pick"><span class="pick-v"></span><select id="srcIn" aria-label="Lead source"></select></span></div>
       <div class="row"><label class="lbl" for="mobIn">Mobile</label><input type="tel" id="mobIn" autocomplete="off" placeholder="Optional"></div>
       <div class="row combo" id="refCombo"><label class="lbl" for="refIn">Referred by</label>
         <input type="text" id="refIn" autocomplete="off" spellcheck="false" autocapitalize="words" placeholder="Nobody">
@@ -264,7 +265,7 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 
   <section class="sec" aria-labelledby="hNotes">
     <h2 class="sec-h" id="hNotes">Notes</h2>
-    <div class="group"><textarea class="note" id="notes" placeholder="Anything worth remembering" aria-label="Notes"></textarea></div>
+    <div class="group"><textarea class="note" id="notes" placeholder="When will they pick up, or anything else?" aria-label="Notes"></textarea></div>
   </section>
 
   <details class="more">
@@ -275,7 +276,6 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
       <div class="row"><span class="lbl">Stock updated</span><div class="seg hide" data-for="stockUp" role="group" aria-label="Stock updated"></div><span class="pick"><span class="pick-v"></span><select id="stockUp" aria-label="Stock updated"></select></span></div>
       <div class="row"><span class="lbl">Payment received</span><div class="seg hide" data-for="payHit" role="group" aria-label="Payment received"></div><span class="pick"><span class="pick-v"></span><select id="payHit" aria-label="Payment received"></select></span></div>
       <div class="row"><label class="lbl" for="funds">Money held by</label><span class="pick"><span class="pick-v"></span><select id="funds"></select></span></div>
-      <div class="row"><label class="lbl" for="srcIn">Lead source</label><span class="pick"><span class="pick-v"></span><select id="srcIn"></select></span></div>
     </div>
     <p class="foot">New orders start as pending and not packed. Only change these if that is not right.</p>
   </details>
@@ -762,7 +762,7 @@ function fillSel(id,list,sel,blankFirst,blankLabel){
 
 /* Short choices show as one tap buttons. The select underneath stays the source of
    truth, so everything else reads it exactly as before. */
-var SEGS=["payStat","payHit","packed","stockUp"];
+var SEGS=["srcIn","payStat","payHit","packed","stockUp"];
 function syncSegs(){
   SEGS.forEach(function(id){
     var sel=$(id), box=document.querySelector('.seg[data-for="'+id+'"]');
