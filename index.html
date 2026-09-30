@@ -1519,7 +1519,7 @@ window.addEventListener("beforeunload", function(e){
     try{
       if(window.PasswordCredential&&navigator.credentials&&navigator.credentials.get&&!K.value){
         navigator.credentials.get({password:true,mediation:"optional"}).then(function(c){
-          if(c&&c.password){ if(c.id)U.value=c.id; K.value=c.password; if(go)go(); }
+          if(c&&c.password&&!K.value){ K.value=c.password; }   // fill it in only; signing in is always a tap, so the 8 hour sign out holds
         })["catch"](function(){});
       }
     }catch(e){}
