@@ -216,11 +216,11 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 <div class="lock" id="lock">
   <div class="app-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6.5 3h8l4 4v14h-12z"/><path d="M14.5 3v4h4"/><path d="M9.5 12.5h6M9.5 16.5h4"/></svg></div>
   <h1>Orders</h1>
-  <p>Sign in with the same details as the dashboard.</p>
+  <p>Sign in with the dashboard password.</p>
   <div id="storeWarn" class="callout warn" style="display:none;text-align:left"></div>
   <form id="lockForm" autocomplete="on" action="#">
     <div class="group">
-      <div class="row"><label for="uIn">Link</label>
+      <div class="row" style="display:none"><label for="uIn">Link</label>
         <input type="text" id="uIn" name="username" autocomplete="username" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Script link"></div>
       <div class="row"><label for="kIn">Password</label>
         <input type="password" id="kIn" name="password" autocomplete="current-password" spellcheck="false" placeholder="Required"></div>
@@ -377,6 +377,8 @@ var DEFAULTS = {payStatus:"Unpaid",fulfil:"Pending",packed:"No",stockUp:"No",pay
 
 /* ---------- state ---------- */
 var KEY="", URL_="";
+// The main script's address is built in. It is not a secret; the password is what opens it.
+var HUB_URL="https://script.google.com/macros/s/AKfycbyxu8CB1qFgk4L9zpgktHyaBTJCToIxgE6sv7rz6sxHKLMdRD6w1-b_y8A9m9glgG-vUQ/exec", OUT_T=null;
 var DATA=null, RCOL={}, OPTS={}, PRODUCTS=[], CUSTOMERS=[], LINES=[];
 var DATA_READY=false;
 /* The pill used to say Connected from the moment the page opened, which is why typing a
@@ -679,10 +681,9 @@ function baseName(full){
 
 /* ---------- unlock ---------- */
 (function initLock(){
-  var savedUrl = lsGet("peps-script-url") || "";
-  var savedKey = lsGet("peps-script-key") || "";
-  $("uIn").value = savedUrl;
-  if(savedKey && savedUrl){ KEY=savedKey; URL_=savedUrl; start(); }
+  var savedKey = lsGet("peps-script-key") || "", savedExp = Number(lsGet("peps-script-exp") || 0);
+  URL_ = HUB_URL; $("uIn").value = "PPR dashboard";
+  if(savedKey && (!savedExp || savedExp > Date.now())){ KEY=savedKey; armOut(savedExp); start(); }
   $("lockForm").addEventListener("submit", function(e){ e.preventDefault(); doUnlock(); });
   if(!storageOK()){
     showStoreWarn("This browser will not remember your login.<br>You are either in a private tab, or cookies and site data are switched off for this site. Fix that and it will stick.");
@@ -691,21 +692,42 @@ function baseName(full){
   }
 })();
 
+/* Sign in: the password goes to the script once, and an 8 hour pass comes back. */
 function doUnlock(){
-  var k=$("kIn").value.trim(), u=$("uIn").value.trim();
-  if(!k||!u){ showLockErr("Enter the link and the password."); return; }
-  if(u.indexOf("https://script.google.com/")!==0){ showLockErr("That link is not right. It starts with https://script.google.com"); return; }
-  KEY=k; URL_=u;
-  var okU=lsSet("peps-script-url",u), okK=lsSet("peps-script-key",k);
-  if(window.__credStore)window.__credStore(u,k);
-  if(!okU||!okK) bannerWarn("Signed in for this visit only. This browser is not saving your login, so you will have to type it again next time.");
-  start();
+  var pw=$("kIn").value, btn=$("unlockBtn");
+  if(!pw){ showLockErr("Enter the password."); return; }
+  URL_=HUB_URL; btn.disabled=true;
+  fetch(URL_, {method:"POST", redirect:"follow", headers:{"Content-Type":"text/plain;charset=utf-8"}, body: JSON.stringify({action:"login", pw:pw})})
+  .then(function(r){ return r.json(); })
+  .then(function(j){
+    if(j && j.ok && j.pass){
+      KEY=j.pass;
+      var ok=lsSet("peps-script-key",KEY) && lsSet("peps-script-exp",String(j.exp||0));
+      if(window.__credStore) window.__credStore(URL_,pw);
+      $("kIn").value=""; var le=$("lockErr"); if(le) le.style.display="none";
+      if(!ok) bannerWarn("Signed in for this visit only. This browser is not saving your login, so you will have to type it again next time.");
+      armOut(+j.exp||0); start(); return;
+    }
+    var e=j && j.error;
+    showLockErr(e==="wrong_password"?"That password isn't right.":e==="locked"?"Too many tries. Wait 10 minutes, then try again.":e==="no_password"?"Sign in isn't set up yet.":"Couldn't sign in. Try again.");
+  })
+  .catch(function(){ showLockErr("No connection. Check it and try again."); })
+  .finally(function(){ btn.disabled=false; });
 }
+// Signs out when the 8 hours are up, even with the page left open.
+function armOut(exp){
+  clearTimeout(OUT_T);
+  if(exp) OUT_T=setTimeout(function(){ lockUp(); showLockErr("Signed out after 8 hours. Sign in again."); }, Math.min(Math.max(0,exp-Date.now())+500, 2147000000));
+}
+document.addEventListener("visibilitychange", function(){
+  var e=Number(lsGet("peps-script-exp")||0);
+  if(!document.hidden && KEY && e && e<Date.now()){ lockUp(); showLockErr("Signed out after 8 hours. Sign in again."); }
+});
 function showLockErr(m){ var e=$("lockErr"); e.textContent=m; e.style.display="block"; }
 
 function lockUp(){
-  try{ localStorage.removeItem("peps-script-key"); }catch(e){}
-  KEY=""; DATA=null;
+  try{ localStorage.removeItem("peps-script-key"); localStorage.removeItem("peps-script-exp"); }catch(e){}
+  clearTimeout(OUT_T); KEY=""; DATA=null;
   var ki=$("kIn"); if(ki) ki.value="";
   $("app").classList.add("hide");
   $("bar").classList.add("hide");
@@ -745,6 +767,7 @@ function loadData(){
   fetch(apiUrl(), {method:"GET", redirect:"follow"})
     .then(function(r){ return r.json(); })
     .then(function(j){
+      if(j && j.error==="unauthorized"){ lockUp(); showLockErr("You've been signed out. Sign in again."); return; }
       if(j && j.error) throw new Error(j.error);
       DATA=j; cacheSave(j);
       REBUILDING=DATA_READY;                 // true when we already painted from cache
