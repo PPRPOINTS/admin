@@ -179,6 +179,8 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 .lock .row label{flex:none;width:88px}
 .lock .row input{text-align:left}
 .cta.wide{width:100%;margin-top:16px}
+.lock .si-hidden + .row::before{display:none}
+.si-eye{flex:none;background:none;border:0;color:var(--blue);font-size:15px;font-weight:600;padding:6px 0 6px 8px;cursor:pointer}
 .err{display:none;color:var(--red);font-size:15px;margin-top:12px}
 .lock .foot{margin:14px 0 0;text-align:center}
 
@@ -220,15 +222,16 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
   <div id="storeWarn" class="callout warn" style="display:none;text-align:left"></div>
   <form id="lockForm" autocomplete="on" action="#">
     <div class="group">
-      <div class="row" style="display:none"><label for="uIn">Link</label>
+      <div class="row si-hidden" style="display:none"><label for="uIn">Link</label>
         <input type="text" id="uIn" name="username" autocomplete="username" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Script link"></div>
       <div class="row"><label for="kIn">Password</label>
-        <input type="password" id="kIn" name="password" autocomplete="current-password" spellcheck="false" placeholder="Required"></div>
+        <input type="password" id="kIn" name="password" autocomplete="current-password" spellcheck="false" enterkeyhint="go" placeholder="Required">
+        <button type="button" class="si-eye" id="pwEye" onclick="pwToggle()">Show</button></div>
     </div>
     <button class="cta wide" id="unlockBtn" type="submit">Sign in</button>
   </form>
   <div class="err" id="lockErr"></div>
-  <p class="foot"><span id="saveHint" style="display:none">Let your phone save these and it fills them in next time.</span></p>
+  <p class="foot"><span id="saveHint" style="display:none">Your phone can save this password and fill it in next time with Face ID. Nothing is kept on this page.</span></p>
 </div>
 
 <!-- new order -->
@@ -693,10 +696,11 @@ function baseName(full){
 })();
 
 /* Sign in: the password goes to the script once, and an 8 hour pass comes back. */
+function pwToggle(){ var k=$("kIn"), e=$("pwEye"); if(!k||!e) return; var show=k.type==="password"; k.type=show?"text":"password"; e.textContent=show?"Hide":"Show"; }
 function doUnlock(){
   var pw=$("kIn").value, btn=$("unlockBtn");
-  if(!pw){ showLockErr("Enter the password."); return; }
-  URL_=HUB_URL; btn.disabled=true;
+  if(!pw){ showLockErr("Enter the password."); $("kIn").focus(); return; }
+  URL_=HUB_URL; btn.disabled=true; btn.textContent="Signing in"; var le0=$("lockErr"); if(le0) le0.style.display="none";
   fetch(URL_, {method:"POST", redirect:"follow", headers:{"Content-Type":"text/plain;charset=utf-8"}, body: JSON.stringify({action:"login", pw:pw})})
   .then(function(r){ return r.json(); })
   .then(function(j){
@@ -712,7 +716,7 @@ function doUnlock(){
     showLockErr(e==="wrong_password"?"That password isn't right.":e==="locked"?"Too many tries. Wait 10 minutes, then try again.":e==="no_password"?"Sign in isn't set up yet.":"Couldn't sign in. Try again.");
   })
   .catch(function(){ showLockErr("No connection. Check it and try again."); })
-  .finally(function(){ btn.disabled=false; });
+  .finally(function(){ btn.disabled=false; btn.textContent="Sign in"; });
 }
 // Signs out when the 8 hours are up, even with the page left open.
 function armOut(exp){
@@ -1483,22 +1487,24 @@ window.addEventListener("beforeunload", function(e){
     inp.style.boxSizing="border-box";
   }
 
-  /* Paste, because the Apps Script URL is far too long to type on a phone */
-  wrap(U, mini("Paste", function(){
-    if(navigator.clipboard&&navigator.clipboard.readText){
-      navigator.clipboard.readText().then(function(t){
-        if(t&&t.trim()){U.value=t.trim();K.focus();}else U.focus();
-      })["catch"](function(){U.focus();});
-    }else U.focus();
-  }));
-
-  /* Show / hide the key, so a typo is findable */
-  var eye=mini("Show", function(){
-    var hidden=K.type==="password";
-    K.type=hidden?"text":"password";
-    eye.textContent=hidden?"Hide":"Show";
-  });
-  wrap(K,eye);
+  /* The sign in has its own Show button and nothing to paste now, so these only run on older pages. */
+  if(U.getAttribute("autocomplete")!=="username"){
+    wrap(U, mini("Paste", function(){
+      if(navigator.clipboard&&navigator.clipboard.readText){
+        navigator.clipboard.readText().then(function(t){
+          if(t&&t.trim()){U.value=t.trim();K.focus();}else U.focus();
+        })["catch"](function(){U.focus();});
+      }else U.focus();
+    }));
+  }
+  if(!document.getElementById("pwEye")){
+    var eye=mini("Show", function(){
+      var hidden=K.type==="password";
+      K.type=hidden?"text":"password";
+      eye.textContent=hidden?"Hide":"Show";
+    });
+    wrap(K,eye);
+  }
 
   /* Chrome and Android can store and refill this silently. Safari ignores it
      harmlessly and falls back to the normal keychain prompt. */
