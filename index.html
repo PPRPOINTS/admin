@@ -991,6 +991,7 @@ function login(pw){
       var ok=lsSet("peps-script-key",KEY) && lsSet("peps-script-exp",String(j.exp||0));
       if(!ok) bannerWarn("Signed in for this visit only. This browser is not saving your login, so you will have to type it again next time.");
       armOut(+j.exp||0);
+      if(j.data&&typeof j.data==="object"&&!j.data.error){ cacheSave(j.data); FRESH=true; }   // the script can send the sheet back with the pass
       start();
       return {ok:true};
     }
@@ -1017,7 +1018,7 @@ function lockUp(msg){
 }
 
 /* ---------- load ---------- */
-var STARTED=false;
+var STARTED=false, FRESH=false;
 function start(){
   if(STARTED) return; STARTED=true;   // the pass arriving starts the load; closing the sign in screen must not start it twice
   Vw.on();
@@ -1040,6 +1041,7 @@ function cacheLoad(){
 }
 function loadData(){
   var cached=cacheLoad();
+  if(cached && FRESH){ FRESH=false; DATA=cached.data; DATA_READY=true; build(); setConn("ready"); return; }
   if(cached && !DATA_READY){
     DATA=cached.data; DATA_READY=true; build();
     setConn("cached");
