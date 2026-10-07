@@ -168,21 +168,42 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 .cta{flex:none;min-width:148px;height:50px;padding:0 24px;border-radius:14px;background:var(--blue);color:#fff;font-size:17px;font-weight:600}
 .cta:disabled{background:var(--fill2);color:var(--ter);cursor:default;opacity:1}
 
-/* sign in */
-.lock{max-width:420px;margin:0 auto;padding:calc(11vh + env(safe-area-inset-top)) 20px 40px;text-align:center}
-.app-icon{width:76px;height:76px;border-radius:18px;margin:0 auto 18px;display:flex;align-items:center;justify-content:center;
-  background:linear-gradient(180deg,#3a97ff,#0066d6);box-shadow:0 8px 20px rgba(0,102,214,.25)}
-.app-icon svg{width:36px;height:36px;stroke:#fff;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
-.lock h1{font-size:28px;font-weight:700;letter-spacing:-.02em}
-.lock > p{color:var(--dim);margin:6px 0 24px}
-.lock .group{text-align:left}
-.lock .row label{flex:none;width:88px}
-.lock .row input{text-align:left}
-.cta.wide{width:100%;margin-top:16px}
-.lock .si-hidden + .row::before{display:none}
-.si-eye{flex:none;background:none;border:0;color:var(--blue);font-size:15px;font-weight:600;padding:6px 0 6px 8px;cursor:pointer}
-.err{display:none;color:var(--red);font-size:15px;margin-top:12px}
-.lock .foot{margin:14px 0 0;text-align:center}
+.gate{--g-bg:var(--bg);--g-txt:var(--txt);--g-dim:var(--dim);--g-ter:var(--ter);--g-field:var(--card);--g-field-shadow:none;--g-accent:var(--blue);--g-bad:var(--red);--g-good:var(--green);--g-icon:linear-gradient(180deg,#3a97ff,#0066d6);--g-icon-shadow:0 8px 20px rgba(0,102,214,.25)}.cta.wide{width:100%;margin-top:16px}
+
+/* sign in: one card in the middle of the screen, like unlocking a phone */
+.gate{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;overflow:auto;
+  padding:calc(24px + env(safe-area-inset-top,0px)) 24px calc(24px + env(safe-area-inset-bottom,0px));
+  background:var(--g-bg);color:var(--g-txt);text-align:center;
+  font:17px/1.35 -apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased;
+  transition:opacity .22s ease}
+.gate.hide{display:none}
+.gate.off{opacity:0;pointer-events:none}
+.gate-in{width:100%;max-width:300px;animation:gate-in .4s ease-out both}
+@keyframes gate-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.gate-icon{width:74px;height:74px;border-radius:21px;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;background:var(--g-icon);box-shadow:var(--g-icon-shadow)}
+.gate-icon svg{width:36px;height:36px;stroke:#fff;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.gate h1{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Helvetica Neue",Arial,sans-serif;font-size:26px;line-height:1.2;font-weight:700;letter-spacing:-.02em;margin:0 0 24px;color:var(--g-txt)}
+.gate .g{display:none}
+.gate[data-mode="face"] .g-face,.gate[data-mode="pw"] .g-pw,.gate[data-mode="offer"] .g-offer,.gate[data-mode="finish"] .g-finish,.gate[data-mode="settings"] .g-settings{display:block}
+.gate-hid{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
+.gate-field{display:flex;align-items:center;background:var(--g-field);box-shadow:var(--g-field-shadow);border-radius:12px;height:50px;padding:0 6px 0 16px;text-align:left}
+.gate-field input{flex:1;min-width:0;height:50px;border:0;background:transparent;font:inherit;color:inherit;outline:none;padding:0;box-shadow:none;-webkit-appearance:none;appearance:none}
+.gate-field input::placeholder{color:var(--g-ter)}
+.gate-field:focus-within{box-shadow:0 0 0 2px var(--g-accent)}
+.gate-eye{flex:none;border:0;background:transparent;color:var(--g-accent);font:inherit;font-size:15px;font-weight:600;padding:8px 10px;cursor:pointer}
+.gate-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;height:50px;margin-top:12px;border:0;border-radius:12px;background:var(--g-accent);color:#fff;font:inherit;font-size:17px;font-weight:600;cursor:pointer;-webkit-appearance:none;appearance:none}
+.gate-btn svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.gate-btn svg:empty{display:none}
+.gate-btn:active{opacity:.85}
+.gate.busy .gate-btn,.gate-btn:disabled{opacity:.55;pointer-events:none}
+.gate-link{display:block;margin:12px auto 0;border:0;background:transparent;color:var(--g-accent);font:inherit;font-size:16px;font-weight:500;padding:8px 12px;cursor:pointer;-webkit-appearance:none;appearance:none}
+.gate-link.red{color:var(--g-bad)}
+.gate-link[hidden]{display:none}
+.gate-note{min-height:22px;font-size:15px;line-height:1.4;color:var(--g-dim);margin:14px 4px 0}
+.gate-note.bad{color:var(--g-bad)}
+.gate-note.good{color:var(--g-good)}
+.gate :focus-visible{outline:2px solid var(--g-accent);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){.gate-in{animation:none}.gate{transition:none}}
 
 /* messages */
 .toast{display:none;position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:60;
@@ -213,25 +234,271 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 </style>
 </head>
 <body>
+<script>
+/* Face ID sign in. A passkey made on this device holds a key that unlocks the password kept
+   here, encrypted. The password then goes to the script exactly as if it was typed, so the
+   script and the 8 hour pass work the same as before. Nothing new is kept on the server. */
+window.PK = (function () {
+  var cfg = { store: "pk", id: "app", name: "App" };
+  var enc = new TextEncoder(), dec = new TextDecoder(), pending = null;
+  function b64(buf) { var b = new Uint8Array(buf), s = ""; for (var i = 0; i < b.length; i++) s += String.fromCharCode(b[i]); return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); }
+  function unb64(s) { s = String(s).replace(/-/g, "+").replace(/_/g, "/"); while (s.length % 4) s += "="; var bin = atob(s), b = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) b[i] = bin.charCodeAt(i); return b; }
+  function rnd(n) { var b = new Uint8Array(n); crypto.getRandomValues(b); return b; }
+  function err(code) { var e = new Error(code); e.code = code; return e; }
+  function ok() { return !!(window.PublicKeyCredential && window.crypto && crypto.subtle && window.isSecureContext && location.hostname); }
+  function read() { try { var j = JSON.parse(localStorage.getItem(cfg.store) || "null"); return j && j.id && j.ct && j.iv && j.salt ? j : null; } catch (e) { return null; } }
+  function ready() { return ok() && !!read(); }
+  function forget() { pending = null; try { localStorage.removeItem(cfg.store); } catch (e) {} }
+  function declined() { try { return +localStorage.getItem(cfg.store + ".no") > Date.now() - 30 * 86400000; } catch (e) { return false; } }
+  function decline() { pending = null; try { localStorage.setItem(cfg.store + ".no", String(Date.now())); } catch (e) {} }
+  function device() {
+    var u = navigator.userAgent || "", mac = /Mac/.test(navigator.platform || "") || /Mac OS X/.test(u);
+    if (/iPhone|iPod/.test(u)) return "iPhone";
+    if (/iPad/.test(u) || (mac && navigator.maxTouchPoints > 1)) return "iPad";
+    if (mac) return "Mac";
+    if (/Android/.test(u)) return "Android";
+    if (/Windows/.test(u)) return "Windows";
+    return "device";
+  }
+  /* What to call it on screen. iPhones say Face ID, Macs Touch ID, Windows has Hello. */
+  function bio() {
+    var d = device();
+    if (d === "iPhone" || d === "iPad") return "Face ID";
+    if (d === "Mac") return "Touch ID";
+    if (d === "Windows") return "Windows Hello";
+    return "fingerprint or face";
+  }
+  /* Can this browser do it at all. The answer is a guess until the first try. */
+  function canOffer(force) {
+    if (!ok() || declined() || (read() && !force)) return Promise.resolve(false);
+    try { localStorage.setItem("__pk", "1"); localStorage.removeItem("__pk"); } catch (e) { return Promise.resolve(false); }
+    var caps = PublicKeyCredential.getClientCapabilities ? PublicKeyCredential.getClientCapabilities() : Promise.resolve(null);
+    return caps.then(function (c) {
+      if (c && (c["extension:prf"] === false || c.userVerifyingPlatformAuthenticator === false)) return false;
+      if (c && c.userVerifyingPlatformAuthenticator === true) return true;
+      return PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable ? PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable() : false;
+    }).catch(function () { return false; });
+  }
+  function keyFrom(prf) { return crypto.subtle.importKey("raw", prf, { name: "AES-GCM" }, false, ["encrypt", "decrypt"]); }
+  function prfOf(cred) { var r = cred.getClientExtensionResults(); return r && r.prf && r.prf.results && r.prf.results.first ? r.prf.results.first : null; }
+  function seal(prf, pw, id, salt) {
+    var iv = rnd(12);
+    return keyFrom(prf).then(function (k) { return crypto.subtle.encrypt({ name: "AES-GCM", iv: iv }, k, enc.encode(pw)); })
+      .then(function (ct) {
+        localStorage.setItem(cfg.store, JSON.stringify({ id: b64(id), salt: b64(salt), iv: b64(iv), ct: b64(ct), t: Date.now() }));
+        try { localStorage.removeItem(cfg.store + ".no"); } catch (e) {}
+        pending = null;
+      });
+  }
+  function ask(id, salt) {
+    return navigator.credentials.get({ publicKey: {
+      challenge: rnd(32), rpId: location.hostname, userVerification: "required", timeout: 120000,
+      allowCredentials: [{ type: "public-key", id: id, transports: ["internal", "hybrid"] }],
+      extensions: { prf: { eval: { first: salt } } }
+    } });
+  }
+  /* First time: make the passkey, then lock the password with it. */
+  function enrol(pw) {
+    if (!ok()) return Promise.reject(err("unsupported"));
+    var salt = rnd(32), name = cfg.name + " " + device();
+    return navigator.credentials.create({ publicKey: {
+      rp: { name: cfg.name, id: location.hostname },
+      user: { id: rnd(16), name: name, displayName: name },
+      challenge: rnd(32), timeout: 120000,
+      pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
+      authenticatorSelection: { authenticatorAttachment: "platform", residentKey: "required", userVerification: "required" },
+      attestation: "none",
+      extensions: { prf: { eval: { first: salt } } }
+    } }).then(function (cred) {
+      var r = cred.getClientExtensionResults() || {};
+      if (!r.prf || r.prf.enabled === false) { decline(); throw err("noprf"); }
+      var prf = prfOf(cred);
+      if (prf) return seal(prf, pw, cred.rawId, salt);
+      // Some phones only hand the key over on a sign in, so do one straight away. Safari
+      // wants a fresh tap for that, which the page asks for if this is refused.
+      pending = { id: cred.rawId, salt: salt, pw: pw };
+      return finish();
+    });
+  }
+  function finish() {
+    if (!pending) return Promise.reject(err("nothing"));
+    var p = pending;
+    return ask(p.id, p.salt).then(function (cred) {
+      var prf = prfOf(cred);
+      if (!prf) { decline(); throw err("noprf"); }
+      return seal(prf, p.pw, p.id, p.salt);
+    });
+  }
+  /* Every time after: the passkey unlocks the password. */
+  function unlock() {
+    var s = read(); if (!s) return Promise.reject(err("none"));
+    return ask(unb64(s.id), unb64(s.salt)).then(function (cred) {
+      var prf = prfOf(cred); if (!prf) throw err("noprf");
+      return keyFrom(prf).then(function (k) { return crypto.subtle.decrypt({ name: "AES-GCM", iv: unb64(s.iv) }, k, unb64(s.ct)); })
+        .then(function (pt) { return dec.decode(pt); }, function () { throw err("broken"); });
+    });
+  }
+  /* Sort a failure into something the page can act on. */
+  function why(e, tapped) {
+    var c = e && (e.code || e.name) || "";
+    if (c === "NotAllowedError" || c === "AbortError" || c === "TimeoutError") return tapped ? "cancel" : "notap";
+    if (c === "cancel" || c === "notap" || c === "noprf" || c === "broken" || c === "none" || c === "nothing") return c;
+    if (c === "InvalidStateError") return "cancel";
+    return "unsupported";
+  }
+  return { setup: function (c) { cfg = c; }, ok: ok, ready: ready, canOffer: canOffer, enrol: enrol, finish: finish, unlock: unlock,
+    forget: forget, decline: decline, needsTap: function () { return !!pending; }, bio: bio, device: device, why: why };
+})();
+
+/* The sign in screen. One card in the middle of the screen. With a passkey on this device it
+   is a single tap, otherwise it is the password once, then an offer to switch to Face ID. */
+window.Gate = (function () {
+  var el, cb = {}, busy = false, held = "", was = false, title = "", mode = "";
+  var FACE = '<path d="M4 8.5V6.5A2.5 2.5 0 0 1 6.5 4h2M15.5 4h2A2.5 2.5 0 0 1 20 6.5v2M20 15.5v2a2.5 2.5 0 0 1-2.5 2.5h-2M8.5 20h-2A2.5 2.5 0 0 1 4 17.5v-2"/><path d="M9 9.3v1.4M15 9.3v1.4M8.7 14.2c.8 1.1 2 1.7 3.3 1.7s2.5-.6 3.3-1.7"/>';
+  var PRINT = '<path d="M6 8.2A6.8 6.8 0 0 1 18.8 11c0 2.6-.3 5.1-1 7.4"/><path d="M8.4 9.6A4.3 4.3 0 0 1 16.3 11c0 3.4-.5 6.3-1.5 8.8"/><path d="M10.6 11.1a1.4 1.4 0 0 1 2.8 0c0 3.6-.7 6.7-2 9.4"/><path d="M12 13.9c0 2.4-.5 4.6-1.5 6.8"/><path d="M5.4 11c0 2.6-.2 4.9-.8 7"/>';
+  function $(id) { return document.getElementById(id); }
+  function msg(e) {
+    return e === "wrong_password" ? "That password isn't right." : e === "locked" ? "Too many tries. Wait 10 minutes." :
+      e === "no_password" ? "Sign in isn't set up yet." : e === "net" ? "No connection. Check it and try again." : "Couldn't sign in. Try again.";
+  }
+  function note(t, kind) { var n = $("gateNote"); if (!n) return; n.textContent = t || ""; n.className = "gate-note" + (kind ? " " + kind : ""); }
+  function set(m) {
+    mode = m; el.setAttribute("data-mode", m);
+    $("gateTitle").textContent = m === "offer" ? "Use " + PK.bio() + " next time?" : m === "finish" ? "One more step" : m === "settings" ? "Signed in" : title;
+    if (m === "pw") focusPw();
+  }
+  function focusPw() {
+    if (!(window.matchMedia && matchMedia("(hover:hover) and (pointer:fine)").matches)) return;
+    setTimeout(function () { var i = $("pw"); if (i && mode === "pw") i.focus(); }, 60);
+  }
+  function setBusy(on, id, txt) {
+    busy = on; el.classList.toggle("busy", on);
+    var b = id && $(id), s = b && (b.querySelector("span") || b);
+    if (s) { if (on) { s.dataset.was = s.textContent; s.textContent = txt; } else if (s.dataset.was) { s.textContent = s.dataset.was; delete s.dataset.was; } }
+  }
+  function glyphs() {
+    var apple = /iPhone|iPad|Mac/.test(PK.device());
+    var svgs = el.querySelectorAll(".gate-btn svg");
+    for (var i = 0; i < svgs.length; i++) svgs[i].innerHTML = apple ? FACE : PRINT;
+    var back = $("gateBack"); if (back) back.textContent = "Use " + PK.bio();
+    var off = $("setFaceOff"); if (off) off.textContent = "Turn off " + PK.bio() + " on this device";
+  }
+  /* Open the screen. msg is a reason, like being signed out after 8 hours. */
+  function show(m) {
+    el.classList.remove("hide", "off");
+    was = PK.ready();
+    var back = $("gateBack"); if (back) back.hidden = !was;
+    note(m || "", m ? "bad" : "");
+    var pwIn = $("pw"); if (pwIn) pwIn.value = "";
+    if (was) { set("face"); face(false); }
+    else { set("pw"); if (!m && cb.storeBlocked && cb.storeBlocked()) note("Private tab. You'll have to sign in again next time."); }
+  }
+  function hide() { el.classList.add("off"); setTimeout(function () { el.classList.add("hide"); el.classList.remove("off"); }, 240); }
+  function enter() { held = ""; hide(); cb.enter(); }
+  /* Password typed in. */
+  function submit() {
+    if (busy) return;
+    var pw = $("pw").value;
+    if (!pw) { note("Type the password.", "bad"); focusPw(); return; }
+    note(""); setBusy(true, "siBtn", "Signing in");
+    cb.login(pw).then(function (r) {
+      if (r && r.ok) { $("pw").value = ""; after(pw); }
+      else note(msg(r && r.error), "bad");
+    }).catch(function () { note(msg("net"), "bad"); }).then(function () { setBusy(false, "siBtn"); });
+  }
+  /* Signed in with the password: offer the switch, unless this device already has it. */
+  function after(pw) {
+    PK.canOffer(was).then(function (can) {
+      if (can) { held = pw; set("offer"); note(""); }
+      else enter();
+    });
+  }
+  /* The passkey unlocks the password, which signs in like normal. */
+  function face(tapped) {
+    if (busy) return;
+    note(""); setBusy(true, "gateFace", "Signing in");
+    PK.unlock().then(function (pw) {
+      return cb.login(pw).then(function (r) {
+        if (r && r.ok) return enter();
+        if (r && r.error === "wrong_password") { PK.forget(); was = false; $("gateBack").hidden = true; set("pw"); note("The password has changed. Type it once.", "bad"); return; }
+        note(msg(r && r.error), "bad");
+      }, function () { note(msg("net"), "bad"); });
+    }).catch(function (e) {
+      var w = PK.why(e, tapped);
+      if (w === "cancel" || w === "notap") return;
+      PK.forget(); was = false; $("gateBack").hidden = true; set("pw");
+    }).then(function () { setBusy(false, "gateFace"); });
+  }
+  function offerOn() {
+    if (busy || !held) return;
+    note(""); setBusy(true, "offerOn", "Setting up");
+    PK.enrol(held).then(function () { done(true); }).catch(function (e) {
+      if (PK.needsTap()) { set("finish"); return; }
+      if (PK.why(e, true) === "cancel") PK.decline();
+      done(false);
+    }).then(function () { setBusy(false, "offerOn"); });
+  }
+  function finish() {
+    if (busy) return;
+    note(""); setBusy(true, "finishBtn", "Finishing");
+    PK.finish().then(function () { done(true); }).catch(function (e) {
+      if (PK.why(e, true) === "cancel") note("Didn't finish. Tap Finish to try again.", "bad");
+      else done(false);
+    }).then(function () { setBusy(false, "finishBtn"); });
+  }
+  function done(on) { if (on && cb.toast) cb.toast(PK.bio() + " is on"); enter(); }
+  function skip() { PK.decline(); enter(); }
+  /* The settings view, for pages with one: sign out, or turn the passkey off here. */
+  function settings() {
+    el.classList.remove("hide", "off"); set("settings");
+    var off = $("setFaceOff"); if (off) off.hidden = !PK.ready();
+    note("Signed in on this device.", "good");
+  }
+  function wire() {
+    var f = $("signin"); if (f) f.addEventListener("submit", function (e) { e.preventDefault(); submit(); });
+    on("pwEye", function (b) { var k = $("pw"), s = k.type === "password"; k.type = s ? "text" : "password"; b.textContent = s ? "Hide" : "Show"; k.focus(); });
+    on("gateFace", function () { face(true); });
+    on("gatePw", function () { set("pw"); note(""); });
+    on("gateBack", function () { set("face"); face(true); });
+    on("offerOn", offerOn); on("offerNo", skip);
+    on("finishBtn", finish); on("finishNo", skip);
+    on("setDone", function () { hide(); });
+    on("setOut", function () { if (cb.signOut) cb.signOut(); });
+    on("setFaceOff", function (b) { PK.forget(); b.hidden = true; note(PK.bio() + " is off on this device.", "good"); });
+  }
+  function on(id, fn) { var b = $(id); if (b) b.addEventListener("click", function () { fn(b); }); }
+  return {
+    init: function (o) { cb = o; el = $("gate"); title = $("gateTitle").textContent; glyphs(); wire(); },
+    show: show, hide: hide, settings: settings, note: note, busy: function () { return busy; }
+  };
+})();
+</script>
 
 <!-- sign in -->
-<div class="lock" id="lock">
-  <div class="app-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6.5 3h8l4 4v14h-12z"/><path d="M14.5 3v4h4"/><path d="M9.5 12.5h6M9.5 16.5h4"/></svg></div>
-  <h1>Orders</h1>
-  <p>Sign in with the dashboard password.</p>
-  <div id="storeWarn" class="callout warn" style="display:none;text-align:left"></div>
-  <form id="lockForm" autocomplete="on" action="#">
-    <div class="group">
-      <div class="row si-hidden" style="display:none"><label for="uIn">Link</label>
-        <input type="text" id="uIn" name="username" autocomplete="username" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Script link"></div>
-      <div class="row"><label for="kIn">Password</label>
-        <input type="password" id="kIn" name="password" autocomplete="current-password" spellcheck="false" enterkeyhint="go" placeholder="Required">
-        <button type="button" class="si-eye" id="pwEye" onclick="pwToggle()">Show</button></div>
+<div class="gate hide" id="gate" data-mode="pw" aria-label="Sign in">
+  <div class="gate-in">
+    <div class="gate-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6.5 3h8l4 4v14h-12z"/><path d="M14.5 3v4h4"/><path d="M9.5 12.5h6M9.5 16.5h4"/></svg></div>
+    <h1 id="gateTitle">Orders</h1>
+    <div class="g g-face">
+      <button class="gate-btn" id="gateFace" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"></svg><span>Sign in</span></button>
+      <button class="gate-link" id="gatePw" type="button">Use password</button>
     </div>
-    <button class="cta wide" id="unlockBtn" type="submit">Sign in</button>
-  </form>
-  <div class="err" id="lockErr"></div>
-  <p class="foot"><span id="saveHint" style="display:none">Your phone can save this password and fill it in next time with Face ID. Nothing is kept on this page.</span></p>
+    <form class="g g-pw" id="signin" autocomplete="on" action="#" novalidate>
+      <input class="gate-hid" type="text" name="username" autocomplete="username" value="PPR dashboard" tabindex="-1" aria-hidden="true">
+      <div class="gate-field"><input id="pw" type="password" name="password" autocomplete="current-password" placeholder="Password" enterkeyhint="go" autocapitalize="off" spellcheck="false" aria-label="Password"><button type="button" class="gate-eye" id="pwEye">Show</button></div>
+      <button class="gate-btn" type="submit" id="siBtn"><span>Sign in</span></button>
+      <button class="gate-link" id="gateBack" type="button" hidden>Use Face ID</button>
+    </form>
+    <div class="g g-offer">
+      <button class="gate-btn" id="offerOn" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"></svg><span>Turn on</span></button>
+      <button class="gate-link" id="offerNo" type="button">Not now</button>
+    </div>
+    <div class="g g-finish">
+      <button class="gate-btn" id="finishBtn" type="button"><span>Finish</span></button>
+      <button class="gate-link" id="finishNo" type="button">Not now</button>
+    </div>
+    <p class="gate-note" id="gateNote" role="status"></p>
+  </div>
 </div>
 
 <!-- new order -->
@@ -636,7 +903,6 @@ function lsGet(k){try{return localStorage.getItem(k);}catch(e){return null;}}
 /* Does this browser actually keep what we save? Private tabs and blocked site data
    both fail here, and iOS also wipes stored data for any site untouched for 7 days. */
 function storageOK(){try{localStorage.setItem("__probe","1");var v=localStorage.getItem("__probe");localStorage.removeItem("__probe");return v==="1";}catch(e){return false;}}
-function showStoreWarn(m){var e=$("storeWarn");if(!e)return;e.innerHTML=m;e.style.display="block";}
 function bannerWarn(m){
   var b=document.getElementById("topWarn");
   if(!b){b=document.createElement("div");b.id="topWarn";
@@ -685,63 +951,50 @@ function baseName(full){
 /* ---------- unlock ---------- */
 (function initLock(){
   var savedKey = lsGet("peps-script-key") || "", savedExp = Number(lsGet("peps-script-exp") || 0);
-  URL_ = HUB_URL; $("uIn").value = "PPR dashboard";
+  URL_ = HUB_URL;
+  PK.setup({store:"peps.pk", name:"PEPS Hub"});
+  Gate.init({login:login, enter:start, toast:function(m){ toast(m,"ok"); }, signOut:lockUp, storeBlocked:function(){ return !storageOK(); }});
   if(savedKey && (!savedExp || savedExp > Date.now())){ KEY=savedKey; armOut(savedExp); start(); }
-  $("lockForm").addEventListener("submit", function(e){ e.preventDefault(); doUnlock(); });
-  if(!storageOK()){
-    showStoreWarn("This browser will not remember your login.<br>You are either in a private tab, or cookies and site data are switched off for this site. Fix that and it will stick.");
-  }else{
-    var hint=$("saveHint"); if(hint) hint.style.display="inline";
-  }
+  else Gate.show("");
 })();
 
-/* Sign in: the password goes to the script once, and an 8 hour pass comes back. */
-function pwToggle(){ var k=$("kIn"), e=$("pwEye"); if(!k||!e) return; var show=k.type==="password"; k.type=show?"text":"password"; e.textContent=show?"Hide":"Show"; }
-function doUnlock(){
-  var pw=$("kIn").value, btn=$("unlockBtn");
-  if(!pw){ showLockErr("Enter the password."); $("kIn").focus(); return; }
-  URL_=HUB_URL; btn.disabled=true; btn.textContent="Signing in"; var le0=$("lockErr"); if(le0) le0.style.display="none";
-  fetch(URL_, {method:"POST", redirect:"follow", headers:{"Content-Type":"text/plain;charset=utf-8"}, body: JSON.stringify({action:"login", pw:pw})})
+/* Sign in: the password goes to the script once, and an 8 hour pass comes back. Typed or
+   unlocked with Face ID on the device, it is the same call. */
+function login(pw){
+  return fetch(URL_, {method:"POST", redirect:"follow", headers:{"Content-Type":"text/plain;charset=utf-8"}, body: JSON.stringify({action:"login", pw:pw})})
   .then(function(r){ return r.json(); })
   .then(function(j){
     if(j && j.ok && j.pass){
       KEY=j.pass;
       var ok=lsSet("peps-script-key",KEY) && lsSet("peps-script-exp",String(j.exp||0));
-      if(window.__credStore) window.__credStore(URL_,pw);
-      $("kIn").value=""; var le=$("lockErr"); if(le) le.style.display="none";
       if(!ok) bannerWarn("Signed in for this visit only. This browser is not saving your login, so you will have to type it again next time.");
-      armOut(+j.exp||0); start(); return;
+      armOut(+j.exp||0);
+      return {ok:true};
     }
-    var e=j && j.error;
-    showLockErr(e==="wrong_password"?"That password isn't right.":e==="locked"?"Too many tries. Wait 10 minutes, then try again.":e==="no_password"?"Sign in isn't set up yet.":"Couldn't sign in. Try again.");
-  })
-  .catch(function(){ showLockErr("No connection. Check it and try again."); })
-  .finally(function(){ btn.disabled=false; btn.textContent="Sign in"; });
+    return {ok:false, error:j && j.error};
+  });
 }
 // Signs out when the 8 hours are up, even with the page left open.
 function armOut(exp){
   clearTimeout(OUT_T);
-  if(exp) OUT_T=setTimeout(function(){ lockUp(); showLockErr("Signed out after 8 hours. Sign in again."); }, Math.min(Math.max(0,exp-Date.now())+500, 2147000000));
+  if(exp) OUT_T=setTimeout(function(){ lockUp("Signed out after 8 hours."); }, Math.min(Math.max(0,exp-Date.now())+500, 2147000000));
 }
 document.addEventListener("visibilitychange", function(){
   var e=Number(lsGet("peps-script-exp")||0);
-  if(!document.hidden && KEY && e && e<Date.now()){ lockUp(); showLockErr("Signed out after 8 hours. Sign in again."); }
+  if(!document.hidden && KEY && e && e<Date.now()) lockUp("Signed out after 8 hours.");
 });
-function showLockErr(m){ var e=$("lockErr"); e.textContent=m; e.style.display="block"; }
+function showLockErr(m){ Gate.note(m,"bad"); }
 
-function lockUp(){
+function lockUp(msg){
   try{ localStorage.removeItem("peps-script-key"); localStorage.removeItem("peps-script-exp"); }catch(e){}
   clearTimeout(OUT_T); KEY=""; DATA=null;
-  var ki=$("kIn"); if(ki) ki.value="";
   $("app").classList.add("hide");
   $("bar").classList.add("hide");
-  $("lock").classList.remove("hide");
-  $("lockErr").style.display="none";
+  Gate.show(typeof msg==="string" ? msg : "");
 }
 
 /* ---------- load ---------- */
 function start(){
-  $("lock").classList.add("hide");
   $("app").classList.remove("hide");
   $("bar").classList.remove("hide");
   DATA_READY=false; setConn("loading");
@@ -771,7 +1024,7 @@ function loadData(){
   fetch(apiUrl(), {method:"GET", redirect:"follow"})
     .then(function(r){ return r.json(); })
     .then(function(j){
-      if(j && j.error==="unauthorized"){ lockUp(); showLockErr("You've been signed out. Sign in again."); return; }
+      if(j && j.error==="unauthorized"){ lockUp("You've been signed out."); return; }
       if(j && j.error) throw new Error(j.error);
       DATA=j; cacheSave(j);
       REBUILDING=DATA_READY;                 // true when we already painted from cache
@@ -1448,103 +1701,10 @@ $("addrNew").addEventListener("input", addrSync);
 $("addrSave").addEventListener("click", addrSave);
 document.addEventListener("keydown", function(e){ if(e.key==="Escape" && !$("addrMask").classList.contains("hide")) addrClose(); });
 
-$("lockBtn").addEventListener("click", lockUp);
+$("lockBtn").addEventListener("click", function(){ lockUp(""); });
 window.addEventListener("beforeunload", function(e){
   if(validLines().length && customerName()){ e.preventDefault(); e.returnValue=""; }
 });
-
-/* ---------- login polish: works the same in Safari and Chrome ---------- */
-(function(){
-  var F=document.getElementById("lockForm")||document.getElementById("setupForm");
-  if(!F)return;
-  var U=document.getElementById("uIn")||document.getElementById("urlInput");
-  var K=document.getElementById("kIn")||document.getElementById("keyInput");
-  if(!U||!K)return;
-  var go=(typeof doUnlock==="function")?doUnlock:((typeof connect==="function")?connect:null);
-
-  /* iOS keyboard: Next on the URL, Go on the key */
-  U.setAttribute("enterkeyhint","next");
-  K.setAttribute("enterkeyhint","go");
-  U.setAttribute("autocapitalize","off");
-  U.setAttribute("autocorrect","off");
-
-  function mini(txt,onTap){
-    var b=document.createElement("button");
-    b.type="button"; b.textContent=txt;
-    b.style.cssText="position:absolute;right:7px;top:50%;transform:translateY(-50%);z-index:3;"+
-      "background:var(--fill);color:var(--blue);border:0;border-radius:8px;padding:6px 10px;"+
-      "font-size:13px;font-weight:600;cursor:pointer;-webkit-appearance:none;line-height:1";
-    b.addEventListener("click",onTap);
-    return b;
-  }
-  function wrap(inp,btn){
-    var holder=document.createElement("div");
-    holder.style.cssText="position:relative;display:block;flex:1;min-width:0";
-    inp.parentNode.insertBefore(holder,inp);
-    holder.appendChild(inp); holder.appendChild(btn);
-    inp.style.paddingRight="66px";
-    inp.style.width="100%";
-    inp.style.boxSizing="border-box";
-  }
-
-  /* The sign in has its own Show button and nothing to paste now, so these only run on older pages. */
-  if(U.getAttribute("autocomplete")!=="username"){
-    wrap(U, mini("Paste", function(){
-      if(navigator.clipboard&&navigator.clipboard.readText){
-        navigator.clipboard.readText().then(function(t){
-          if(t&&t.trim()){U.value=t.trim();K.focus();}else U.focus();
-        })["catch"](function(){U.focus();});
-      }else U.focus();
-    }));
-  }
-  if(!document.getElementById("pwEye")){
-    var eye=mini("Show", function(){
-      var hidden=K.type==="password";
-      K.type=hidden?"text":"password";
-      eye.textContent=hidden?"Hide":"Show";
-    });
-    wrap(K,eye);
-  }
-
-  /* Chrome and Android can store and refill this silently. Safari ignores it
-     harmlessly and falls back to the normal keychain prompt. */
-  window.__credStore=function(u,k){
-    try{
-      if(window.PasswordCredential&&navigator.credentials&&navigator.credentials.store){
-        navigator.credentials.store(new window.PasswordCredential({id:u,password:k,name:"PPR Hub"}))["catch"](function(){});
-      }
-    }catch(e){}
-  };
-
-  var lockEl=document.getElementById("lock");
-  var setupEl=document.getElementById("setupBox");
-  var needsLogin = lockEl ? !lockEl.classList.contains("hide")
-                 : (setupEl ? setupEl.style.display!=="none" : false);
-
-  if(needsLogin){
-    try{
-      if(window.PasswordCredential&&navigator.credentials&&navigator.credentials.get&&!K.value){
-        navigator.credentials.get({password:true,mediation:"optional"}).then(function(c){
-          if(c&&c.password&&!K.value){ K.value=c.password; }   // fill it in only; signing in is always a tap, so the 8 hour sign out holds
-        })["catch"](function(){});
-      }
-    }catch(e){}
-  }
-
-  /* The only thing that truly survives on an iPhone. Both Safari and Chrome on iOS
-     get their saved data wiped after 7 days of not opening the site. A home screen
-     copy is exempt from that. */
-  var standalone=(window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches)||navigator.standalone===true;
-  var iOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
-  if(iOS&&!standalone&&needsLogin){
-    var tip=document.createElement("p");
-    tip.className="callout warn"; tip.style.textAlign="left";
-    tip.innerHTML='<b>Stay signed in</b><br>Tap Share, then Add to Home Screen, and open it from that icon. iPhone forgets logins for sites you have not opened in 7 days, but leaves home screen apps alone.';
-    F.parentNode.insertBefore(tip,F.nextSibling);
-  }
-})();
-
-
 
 /* ---------- the real reason it keeps forgetting ---------- */
 (function(){
