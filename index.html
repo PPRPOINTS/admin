@@ -12,7 +12,7 @@
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; connect-src https://script.google.com https://*.googleusercontent.com; style-src 'self' 'unsafe-inline'; font-src 'self' data:; script-src 'self' 'unsafe-inline'; img-src 'self' data:; form-action 'none'; base-uri 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; connect-src https://script.google.com https://*.googleusercontent.com; style-src 'self' 'unsafe-inline'; font-src 'self'; script-src 'self' 'unsafe-inline'; img-src 'self' data:; form-action 'none'; base-uri 'none'">
 <title>New order</title>
 <style>
 :root{
@@ -168,46 +168,21 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 .cta{flex:none;min-width:148px;height:50px;padding:0 24px;border-radius:14px;background:var(--blue);color:#fff;font-size:17px;font-weight:600}
 .cta:disabled{background:var(--fill2);color:var(--ter);cursor:default;opacity:1}
 
-.gate{--g-bg:var(--bg);--g-txt:var(--txt);--g-dim:var(--dim);--g-ter:var(--ter);--g-field:var(--card);--g-field-shadow:none;--g-accent:var(--blue);--g-bad:var(--red);--g-good:var(--green);--g-icon:linear-gradient(180deg,#3a97ff,#0066d6);--g-icon-shadow:0 8px 20px rgba(0,102,214,.25)}.cta.wide{width:100%;margin-top:16px}
-
-/* sign in: one card in the middle of the screen, like unlocking a phone */
-.gate{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;overflow:auto;
-  padding:calc(24px + env(safe-area-inset-top,0px)) 24px calc(24px + env(safe-area-inset-bottom,0px));
-  background:var(--g-bg);color:var(--g-txt);text-align:center;
-  font:17px/1.35 -apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased;
-  transition:opacity .22s ease}
-.gate.hide{display:none}
-.gate.off{opacity:0;pointer-events:none}
-.gate-in{width:100%;max-width:300px;animation:gate-in .4s ease-out both}
-@keyframes gate-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-.gate-icon{width:74px;height:74px;border-radius:21px;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;background:var(--g-icon);box-shadow:var(--g-icon-shadow)}
-.gate-icon svg{width:36px;height:36px;stroke:#fff;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
-.gate h1{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Helvetica Neue",Arial,sans-serif;font-size:26px;line-height:1.2;font-weight:700;letter-spacing:-.02em;margin:0 0 24px;color:var(--g-txt)}
-.gate .g{display:none}
-.gate[data-mode="face"] .g-face,.gate[data-mode="pw"] .g-pw,.gate[data-mode="offer"] .g-offer,.gate[data-mode="finish"] .g-finish,.gate[data-mode="settings"] .g-settings{display:block}
-.gate-hid{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
-.gate-field{display:flex;align-items:center;background:var(--g-field);box-shadow:var(--g-field-shadow);border-radius:12px;height:50px;padding:0 6px 0 16px;text-align:left}
-.gate-field input{flex:1;min-width:0;height:50px;border:0;background:transparent;font:inherit;color:inherit;outline:none;padding:0;box-shadow:none;-webkit-appearance:none;appearance:none}
-.gate-field input::placeholder{color:var(--g-ter)}
-.gate-field:focus-within{box-shadow:0 0 0 3px color-mix(in srgb,var(--g-accent) 32%,transparent)}
-.gate-field input:focus,.gate-field input:focus-visible,.gate-eye:focus{outline:none!important;box-shadow:none}
-.gate-eye{flex:none;border:0;background:transparent;color:var(--g-accent);font:inherit;font-size:15px;font-weight:600;padding:8px 10px;cursor:pointer}
-.gate-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;height:50px;margin-top:12px;border:0;border-radius:12px;background:var(--g-accent);color:#fff;font:inherit;font-size:17px;font-weight:600;cursor:pointer;-webkit-appearance:none;appearance:none}
-.gate-btn svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
-.gate-btn svg:empty{display:none}
-.gate-btn:active{opacity:.85}
-.gate.busy .gate-btn,.gate-btn:disabled{opacity:.55;pointer-events:none}
-.gate-link{display:block;margin:12px auto 0;border:0;background:transparent;color:var(--g-accent);font:inherit;font-size:16px;font-weight:500;padding:8px 12px;cursor:pointer;-webkit-appearance:none;appearance:none}
-.gate-link.red{color:var(--g-bad)}
-.gate-link[hidden]{display:none}
-.gate-note{min-height:22px;font-size:15px;line-height:1.4;color:var(--g-dim);margin:14px 4px 0}
-.gate-note.bad{color:var(--g-bad)}
-.gate-note.good{color:var(--g-good)}
-.gate .gate-btn:focus-visible,.gate .gate-link:focus-visible{outline:2px solid var(--g-accent);outline-offset:2px}
-@font-face{font-family:"UIAlt";src:url(data:font/woff;base64,d09GRgABAAAAACCQAA4AAAAALMAAAhmZAAAAAAAAAAAAAAAAAAAAAAAAAABHREVGAAAgEAAAABYAAAAWABAAbkdQT1MAACAoAAAAIAAAACBEdkx1R1NVQgAAIEgAAABGAAAASMH1xd9PUy8yAAABuAAAAFYAAABgeyv91WNtYXAAAAM8AAAA7wAAATqyJlCkZ2FzcAAAIAAAAAAQAAAAEAAYAAlnbHlmAAAFDAAAGAIAAB9eyzRUxGhlYWQAAAFEAAAANgAAADYWL8/VaGhlYQAAAXwAAAAgAAAAJA9SBsZobXR4AAACEAAAASsAAAG84Nsr2WxvY2EAAAQsAAAA4AAAAOC/ocgpbWF4cAAAAZwAAAAcAAAAIAB3AFVuYW1lAAAdEAAAAtkAAAcQ1tnVg3Bvc3QAAB/sAAAAEwAAACD/wACWAAEAAAACGZkv9V7yXw889QAfCAAAAAAAyED5mgAAAADm7HNr/87+TggABewAAAAIAAIAAAAAAAB4nGNgZGBgt/vnx+DMIf//3P+XHAwMQBEUkA8AjrwGKnicY2BkYGDIZ/BnYGVgYWBkAPEQAMgHABSaAM14nGNgZlnMOIGBlYGBdRarMQMDozSEZr7IkMYkxMHKxM3GwgQCLA1AQQYGhiQGKDB0DHZmcGBQUBJivfwvkNGY3Y5xE1CYESTHYsXaCKQUGHQAJvkLcAAAeJwtkL9LA0EQhd9d9nI5sUghsQpRe2NhFTs7bcRfREQFhUii7XU2NhFjwBTWImgVQnojYmF1VWytxT/BWuI35xUfb+btzOzO5qWxX5Pgxf/UnosVQSksaz2oa827Vssf6BKmc2XNu6Ea1I7ID9BX66V+E+6hCRuwBNvQgjPYh+OsfsSMU5uTaqzdQkWP3OWgHyRqQd9i961+vqam5fS9OWku9WP8QVpr5yfmpfrfd0RflfiBOApvFaFVWMRfZc5dtm8x964pF0++2OWcmbZ7mztM65ZTU87inpfoxksmH5x3ibvc38HvZOdtU988qUZfhfyKOAySyS86CwHs+EMt+DN6NmX/Q+pWcsu6cA3eNtAPXs9ifBXEO8faKsgrkRfRJ8P+zf7yD1ZSX2QAeJx1jklOAmEQhT/UNUFAnPXvFtsRwVkUGRXFWUFBEbyBR/AGJsYruGUhK1d4DRNMmuYULn8rxA0LK6l6Sb2qvA/oAXql/TJdHe1zWaITeGTjJswTb9T54Isf5VemslTNeDFeTa/WcqeIiP/+5/u6fd0G3dB1XdPP+tHJO1kn0/q0v+2mXe6kjfF/DQrLMP0EGMDHCEN4GZWPcWGblFyDZTbYZJEl1okyzQwrmGwRYpVtIV9jh1mCzGMxJ5xTLBBjlzgJkqS45IYiJ5xxzS37HHBFmhKn5LnjnAJlDtnjiCw5LshwzD0Vqjz8AvlAOJ0AAAAAFQAVACkAPgB3AMsBGwFyAYABnwG/AeEB+QINAhoCJQIzAmECdwKlAuEDBwM2A28DigPRBAwEHgQ3BEsEXwRyBKkFIAVGBX0FrwXZBfAGBgY9BlUGYQaABpwGqwbcBvgHLQdQB5QHvggDCBYIOAhOCH8Inwi2CM0I3wjuCQAJFQkiCTMJewmzCd8KFgpECmYKrgrWCukLBgsiCy4LaguUC70L9gwtDE0MjQytDNgM8A0YDTgNYQ13DawNuQ3tDhMOTA5yDpEOmQ67DtUO4Q7tDwQPGw9gD3sPlg+jD694nHV5CUBN6fv/ed5z7r3WdKtb2dJ1W6wx3RbbaHxnkH1LpTCWUCEpUZauW6IiiUiLEFIhW2QP2aLsy5jGzndmMBhjBnXP2+95z72ZZv7/r5y7nPu+z/t5nvdZPs97OMJVcZzMVabneE7BcZZqpdpSqVZWCdNqs4fyVTJ9jU7mXmsj/MoR7ijHga5+JGh4Le+uVcGMdNtzF85CCv+hRldRweE4P/4CWdpwHLtI6GqrIzQmRXWEvwDHaX84jiMbc5wQIovhWnPtcCSvVql5jSW7NO5avNSWWp5dWryvtuSXDgeBvvAP86XrfcJ8Kp4MN4DFuDB/mOkf5n9L/GYkhA7no2jqLBoMG9k1C+bOMn6iwbNoKsxFRNZ1EcJo2WvOgevCaTnO0YH3tLa2Ubrw7m4enqgOflE4OTkr7XiVlVyh0oAb++bhAVZsmEDk1HdAUcvNq/evGOP45Nri45Wdiq0WRh3M8Hd5/3AxbHGbsjolQxzvOnUONVhZwFjHBdGN4V2XAYHBg7L3No6Pb5yxRT0xpCn9ttMA/+hROy41zSO2/Xw8HWmXxvPIh96je7SBHWa4Idygug/y27IUrinXAq3jzLCClVzT3glxal2tQQNaR1drVf0thKlpL1dZWWtd//FZfjsvN2dzZv72jbW9s/msTbWPNmdtzs3dnCWbMCwwcNSIQP/Rte+GBkwcOXK83yg4cO/nJw+eP3ohhsv0zR4/vP/yl+pHjwyOB7fmHt61Yye5sC9v88E9Owo4tKN33WuZhyyJ03DduJ4IuL2zXIJi7uhkgsjsZ23j4WmDb1pXT5W8HpdNX8I7OZsACoX7Y4acDrn3GvzU3UsLMo6WPp1zeG6vNK/1k8IHuvSgM4J8JwX1i1/kNfhCzOvs5QNXN9P1G3DtCFhn9C0asGHHxmXzjwRUXcv/0PnzT1PMV1gLMd6BMwIj4tyHBxjyXj4KqohJ8eSAC0afs5c80uiPTUxuiF85HfUnubJKDs1uaW7hqZUTpbmFjcaJKHWHThQf37vnZPHJEmIFaqi8cp12oS/pK+pyqxKqoB3OboazOxtngzlRaDwslObEWWttoSSdcfqJ4r3H2XRz+oi6XbkJN8AG/27eqKRa+oStriYHiIjI2HxHG5mNguedPR09ZQjyEjTqSv97dMGGnAUn6S9doWmzRCFgxrJBNd5A6jjvT4OWz4SOTEYQVyIMFHLRVzhQapRqd7VSq1SryOZ11B8K1kEBmUR9YPda2E191uL4I7QG9Fw1iz5HtksaD3eNO+idOiya6F9dELq6X2JsNZMbCNfJCBLOrGbprlYFwge4vmUL+4UZLhYl4C9aDJrj5dXVeJere016oi3wrgq0ANm5NMRK9rjGHiN9ZN1rQSPbgBhtJEtp2jMzq10t+PrPWlcLQfP5jz8+/Abc599KU/Ly09Zt2ZxOztDNdBVEwFSYCaF0Lc2Er8CCvqdX6G36EtrgujmYRVqgDZswNGqlzN2RqZ8DM+hZGJYPfplCn2dFL2ptM3HsDBzbDHHYsbF9Ze6STyqcPUweK1fgf7VqhnZd3ualIxJjItc3P2L18eydF0PSb0Qm2pFHuqiDaYsXJ/rOW7pkrrLwUsXR0Xl5RRMzBjDZw1HHlii7Q32sOntaq1092BqYz4wfGi6mwGwjtPz037t1tsccoEVi9v6d06ekb0uIX7Cu2SFc9farjDW5+yCh/O6Zk8qa5csi9Tn6iLnxC+eY7Tl7ft+KQjtBeYDl226ok6ekv0W9B4BWiakZdQGFQs3PLRKDScLJC3QNcWtOMzzM4T140TPgtYo/bBi6ml8gn2gpvh5shTqMRh3aoqw2TAfOqMPf0DE5Yypm8IW29OOr8+/tD/d8nbZ9x6pBsV77uvFqMb51VPH1j3DlUR23e5vqxt7MhO0unuSvTNov4AMiDTZZyJprz+Qbd57T2lsqnNhHyTCKBulLaPn+zhsDyBHumN3uB7MKvzoQWf6idMPy2OytsXHpUPWIUpgCoyEMEumTdrvpE/ou8PsPdzPz1+m3Xd+L+oRI+62XYqMJUWnMLQDjQ2j2w4FxJ15AM7Epv014Sw/TZJpeDmZkLCRkov+OQ5ytEGdLrBPdGmReT/eG2Q23j3dT12O1NOI2xx0XWn365Wld7qLIhN+vXP99+bwVGx7SGl1C0hJdgiYnJSkLOq5bA0nlP949n3zCSmhdErP10rmdMSU2gvVR0vxt9IIYXZRoiE9IXUIfpKDVJiEaC0Rjg2gwdr7sioUly7lEAmTR0GweggX9+OeOi513exzJLhI6nJ136vmnB6/en8uJj9uwYenw5cPIA7qeLlyZ3Xof2EPTgNkg3Hsg0u17i67tz8g6ODAOV5ViXOhl4gUY5bwU6eXl/Mxr1wzrr13DMVImwTGNueYNc4mS8QJjPim/liMllGskB2cAN43LEryFIk7OZIIKQDWNf2bI5wNI7yrIy8L4TstkPh0E/sJA/nX96moV4BWEQ9vyz3j/9HTKpadz/5Tn6Q7gzuQFoLxnWZkwB8Ky6MQqlOaDXuAsRb3kdxgXLM41fRVfQtJB6yoAwhacu4yeMNJ7AOwlzn2HjxzWxzF71artZkdagXD3EXBiarnQaMj8oO96u0V+1z94pFfPngP8e0csW7Ww2YXbt2q/RgJEuK30hSIM86AXN1zycsl5PDXGAulmgbtlo/XU8rhZbK/c3YiDpr1AVFYWgtbVAeuloGnvQNzNLRzUrrjvEkLTxnp6KMIiq3RTZ/Hy/5TP3bRH/0tK9Wi5c848x1EjVwzPog/Pvqerbm+CjhfSoNMWzzS6p/h3mlH2GY6Bxe8w8aiYtyxs2qaA76cuud7BhvxxjN7a7u8/YNGiykPboVX+4S1Uvn3cxOT36w6Cav1dOrvmDL2fO8Qv3C+wDCb/F2zhct0hevjp9CW6J/HRiTc3jWc7JWD1H40RpuDMOQ55Gq9huV8hV+BHJ2chdasYm3eBeN0nHmJg45ZflZAWh9q0gRwaxLil8HubMXH0K7jR34+xCqQWwkuU1RwzhB2znaBBQmqvZFTCmvEH/MYiTS29Cy/pmw/iOcLBu1VLCw7TNznptAz6ZWaMonk0ByL3boGUEzdkelq0pKit1VGoiZhC/xMp1n2mQhzzHcxGshgpyjlozxkT0Rfrc2h8RgV525fUAC1+hg7rc/zo+et3aMU2mAX/eQIuAw99dV+oobdoDRXpeXAcfvjUfhj0BEZB7L49fRbFMeugRrJpqFFjzlLyBaNCHI/yJR0sZNOK6KVK8Xe4CdMh4TTLYPR36JX9KpZc+5EeLUb4mfQQyMGydn8i1ljEzaxEjTmNFTq16SoQuhrW8q6Gq3yGTJ9D+2RRVY5pdJqEAGsDG4n1AVk7b2F4U8b/KrwQP+SK53ECkzwDLbLFWB0tv1hAY7QNep87oxZGA82AcBj2EhxGHO5za9MHzMIW75PfDqaBZGw4PX7qAT1dSC6CH0TnFntEh9H79AP9k17x8aZbaKuIJftgiEkPmb1RD8SPuFAbvITJorysjNSUkRQxUqYXdxOfGh0bfxJfFhtZHJY35cky5kF4377uNR+M982ZPMbnWcGSaJCVHCpo1rfHLWK/D45Gs1Y9tIKIdvPiUpP5/jkGTdUrEwovEwpQSCiYAwujxaojCGPnE7GA4N8q8Tli6UvOijmGZ/W70A3nyYxo0P5l5JJMX9s6x/SrnOCvrZhubp5YiDXg7Gxjw+QDthIeHp5Yo2W+jb9ypunLaWoPNS8U1cICK0d5I21jCP+T352z5uA0wzf86aKwOScNPjK9oVvvFXYdtqn4G5LW9dZrznCbBDu5M/v1Es1ksqKHpKbZbmHf5J0Gf0Tlfc6fz8F5hJuMe3wP99iMYZM88ou/WyhYcTHuNie7V0jP3btPz+cj+Rp8D/rsLKef372nn6Dpbx9ARi4+oCUH9sGwh1h+l+yixx6CArrQH3CfP9IK6Gr0fSmam3DK+lhG33MVFObM9+0xfGsf0yllZNRvIJymR2gCxMM3/P1Lr8Vqmf5hJSjF2wwvXSLhtTVVP5m1sZ1gVdDpfyBHavhnx4Tpnn0mjM0o73uBPsn4HzrQu3SpJja8+XLrXZeaHIJv7/wPZUyRHGzKTWhxky6s5gFfn5mEVVjABpWRjDfAl26FNZ92bqK9oSpjBxkklsr0d05tuttG3Mq/XqQXP6XgHk7Ayv4Jdesq2Uf9xXndXIgza0mxAlgbQ5AVAGsbO5nwiV6jr0Rx9FH76wePVnhF5E7auSeIVVLyjmpPtCvOKjzQP+5sP/38GUM7M+oI0x11C3SL+vv2cLJ2HBy4cMShc+v2q8Onhc/pN7Z35xbtOvfyiUAkLrhXJVIWr+8hVOT6KdpGWC68qG0tvMiRvDoXfacjjrJkHZ+D5G1WxmjDD3KBVO+hdHXZuaOnbp1Kox+tYt/l83pD6plL1y7yQYa0XZ/iUQbmIdkwlNEIrchKhQ0GAm92QTxTAct9fGBZBXq6/efP/GPjWMVyHNuSjWVNo5xVF0sMHwtL9uaJjblW9vPzD7YurRzqntPJF8WuTrZef5X+2cO+cev20Ogir/O5Py/HgMXGoC84EAYCP8Ow7t56TWQaf4Az6i3rXB/9GKMs9Fn0+9NxdOQtYkuVtyARltyidqQpCRY3kp/IDvEe6ShOEduy+bhzkkUaGe0mTecbnxKf3oQ9sOsm8RaPEG++pziZbMbR/dDK24y5WI0knVkZ1MK22lzkLG/5l8hbklIF35yVtflM9lrqRzoij2AMCPMLBrhqLWT8+iv1U0TpP6fouX/2XDK2eAYNyYVsY9cFnDn1g50mCe5apQZTovmvv+IgP708Uv9pJZPQhGzl0TcZg2pM2IbwlthbXc2D8CsQQbaSGHEFeSyitLonNERIpq/YWjwibycU0pA4qZKGCvuJhew5y4XIwbSWKiihh6/dF/aDdVv6xIqdCaGnRwrDOQ3XnfmORKY969kX9oHWKsmTTHGNXMmZUSN3hRnyImvI3bb9wV9/hEfHhDU94QLLKq926t1K/d3AoEC5vH9pwNSsced18QO+t9q9oaBELvReFjE6QAkOx/dTl5GjFOHmIeGLZ6wI2DRmnEC6B43yn8SieZnU51Qip9awrKJmixrpK3NlhZa1IhZ8w1akLY1YtE1LGpFieYkguO5YWHXmZPSKjSsTMxNjSHvx8rip7XRNPAqF3+i4fv7BAfQ1ffrs3PWnd65UMAuh/vxl1J9xDSOVs5HIu9T41sc4WCYmTdK3OKx6vPvZ23eP86vbHDWLCEldStr/cD14VrOcY9AOLEEJ7XZnmAWEnmJ6+KLct6iH1FE5mkSyrKF1ZorYaLBhMS5oNDbvLiGH1Yu2uxJSIt/NK8Qfo1dkJidnJMYUBweAFdgSj4ApMXCm1rLQw3xeJwh/du72o3uXKky7aItaWDTUg6iNatgrVc6SGgqwykqPSmmZO5kWvKut/RUeHGuxZkV8phw+Hrs80btrHQd20AqagZ14xjZ516a9mcxCGE6kj+wypzJGEnbMUmNjo5L2QIUdRUjJxo1xy4e4ddX073uLLzUM4kvjF6bHNUtqNGD85HjJGtSPfysM4exZXIPUJlkjLndNQ1tr0fW0cpXSHLe3Qc9EHPbftDtksSgImhPtgQUXj1dURRa6kEbCLvlB7/gxybHzU8cu86Z+K5e2GjIKehcHh0AjaI07ogyZbJeu8CgynKc9+AvLyqZdevzwbJB0trQaI+UN7o4tfjF2/aiZaVWJabDq8XWvbUv27TzUadJYXWZJCVYTfejUvVfFbqQ4Yo7bvvVinKySxn4d1wT1S0I5X0vRXt+ToYykkpISmf3u3TWPhV61FzhSdxWj3jjK3DhKyfpXZ3cbKVEnlURHD3Pt27+HcVJAZnLjlXLvYGEH4k3G/MTjzH9xIb47XbuspASqb9FBcBXezKY6WaVhMmlOu4kZnHEe9DVmIcaFkktklTVueD8RWZAG/aWjxILq1XZz1toRGynErE1vRrtIv/Ocb3jk8oPyIiA84XttmLUotQ3fY/Pc7esP+IbPjyfFm6L3bRFT+DEnO8m69BwRGTBl5uxJB64we22K3rtVTDGuy7/BdY3sy+n/tzAu1LPT+HFxG0pMK/XdFnNgBymeOd/tQO7f4sMn7K8Uu5kiTWiLMpuw+l9/gqX+d5KoefPbe3jx6eXJhE25KSvX560kdvQ5fQlqUJLu9C198vjKtZ/u3rsu5SDqhxKH1ff16vbOGusvMFUNU1CDHFTjKxNK5MUgyITuufpLF04uTJgZ45WYuXwRS0InGuXRcTL5Tg/hq+mWQROQdj94ejagLPPO5fP18fEOdZCyhexLqjAFhEbJmlTLhkfJz6+exlSxxQPDYI+iRCAeuTeTM5KiY5ZnJluBNVgTD79pdutkvV/XekDp9pmBpO+tyspHz879yBl3gSTiapbMK1Apa6NOpohWrpYXNRI6h093cHToEz6f7xuRfMRx5fQmO5qcKREr2fyemNsOYzR3anCeZspkzs4uxnOPf9Ijnj/88/XL1erNNmuWJun8p+iz4wffunzwVpu8FvFhC+d1n5iRGjuoA3TOzE9Iaec3ysfnm5Gt2ncYFjYyPTt2pZX3sMFDXPp0cnT4evBktn67uncEnYCzYplV096d5SRPLWYijbFWkU7jJvywZJl79KVLWi+H7xrZ/kluxr9/Hy+OHe5lhvMTEP8roZfEs3HGF6Jko0F6ZzoOUEKv/9cLkcGPlvyQRBr2/O2H5AZDhZHPf0apTYz8ibEgT0stmXaHLjj9pnkPjfNfZTj/mw7no+aTs1i1RdzpShxvJXGovykUTrJkL8KGGycdGjsdvU5vHChVOCifnjnp0q5qHxELuxaK3VGU2rZ4MB8otjy1km+F69vg+i9R3r8YE6+mD2j1WdDTtItgBs0qaBoshxP0O9KFmNFA2CF+EG8y/DL0QQPOxyiyxKTEDIkM0BIDE8GAGSkb7OrkUjBFScecfi4zG8oP+O0UnfTtvBTq13SF/GNnwV0sMnN+2Pw82V97YU/hGJQ4BhFlSadQnLaeVKnGkAnied5czCORSbzTyiTDjxLbaY+cKhEzlUaqD+6YHJzdkWgo0ZdwX5lbGg/2JDqiVRHQJYWEzQ5NiF/hFTgs1H9cyLBAL+qXtRJCoiJlOiEyCkJTNupnzqI5E5NURJU4mWaHzpaYWSkdDhOMOdESd700nw5XxH6KM2FYYcRg6SqtLZ0rKk3nxNLaNiq5hAXvTAwcETzOd+aIwD7L4hNC54SHJOmW0R9mh8K0KYlWxGrFZAiaNVO/MYVumDdP0AnzomhGcrYe1xlPOgojeWcpX7FmiZVmdylmTC2UnB/aP22Q3v/bef3mbHTTxbWL7hoX0SuKdOzSqmvHbqk+rVyaqcev7+SEsnphZRiJnYojykLPVTOjuSNa5T+CkJ0vsI5I7eopjFTuWyMOGOd77NjVc+sutS9WzRkYEc4exY0fBs+K24Lnhq1ZLlti1ujBtrwiZnbPb4ZELqGP9bELjnXcx3LVQn48OfLliUGDZ18NTzrJkcL58wt3RkfvnD1jyJAZIYMGBwsxC/ILoqIK8hcMDQ4dPDg0BGUx3u0glEtP0/7xjISdKpLF9c9J2OEiKaBRsDINkun8NNE/La2ujvsDTsFhkmUu58J6GKv6E6GdEMkiwBLAE8AGsF2E1TCFbgmGiTAxhObBpOl0M82BwTAFJs2gm+H7ELqdbgmByXQTO+nqxz1CRFFSJWdn0+zEVDrlxPeHBeJx/pl4rIA/VVpK89aupbrSUsb1oVyIIEOZRylxrBAB5UlJxvuNuL/vN+JM90dBGlnMn5DkN7AfWbxt/tyteeHzdpCiuQX5kZGbtyIiQC+Rv5Se6UiI1Iik/pJ3OGsoPW04VF4t/WM2MMdq6Iu70xlz4xcyy2s8tc6e+GLRwCkUaoWaPfXDN2trcjAo2uyoXXXxfdFuV4dont/SQW//qXpvddujZjGhqzNUcKoDncoLcK4DnWWdFxsUaJZdAHIQ9MN9dQC1hVlmgUHFJ3S2fTs46csPsXYjjwuSTyTfsXMQsEa+i/GM1UyB+6rv2ddbl5qq8+7bk38AHb+NWz/IYdD6uG99/zXLCUsTxhuSf0+1u0z39yyDBnQNZ3HTyCTBm7yvfyI2Dd1l0tq10hMx9JFYkmX8hZ2Tw6mffvo/6Xe9IQAAeJydVMluE0EQLTtxICEYzhGHJkIoSLFDIkCIW9iRjBLZLJdcxrPYSWaTZ4wVPooz4sAXcOJTEB/A69c1jnFMDqjVM9Xdtbx+VdUickO+yZLUlldF5Aumk2tyEysn16Up31VekrvyQ+XlGZ2GbMgvlVekWVtX+Yr8rm2ofFW26k2VV+VW/ZHKa/Wf9a7K1+Rx447K63LUOFL5upw0vqrclAcrm/JcjmWAWWJ+llACMZge1h4kXzLJ5UxG1Bpi18gWdu/hvyf3ZRfTyCtoZTiPYW/kGeQRrOzXo99MUmnjZI1nl/vbg9RVHK9pvw3pDTz48HGI0cW6h5MIWlZzIGNE9uBzXwpohdAN8B1Br4U5b/OBZ4XisnHbiNuWh6pZ6XWg0afu+S0M/gW+lpuSJzZSwuin2MtgeRl+A72QfBc4CbkK6NX6fg+NHrUOaWlvUjJaSq13CyIeIGIEe5/cV5o+fdscOs8Z5KFycgK+RkQQ0K66W4HIFxlcnM0e0X1izLfct+uCZ0+xLvRejrN9xkuwslxMgMTGHVL2yGdAa1sTqVr2USXm0jhGbT3NS4qRQdehtDbbynfEb8G4KWIYyB5vbIjUoovmUBgy5pF/l/MEpyV1fezHGGfaIQn4cVH72gMTdtRwenfo395kZs+5cNUSaTUa7uaQM2Kv2GsxIxZ/SFRW8tihfVjEjONwDFkTHjMaaoZLoq1YCvRWFmHOnZa8YDXYrgyVyY/o585Cj46t2Yq0mYiJt5jxnRJtwL1syqzVijWSu3HMd+N0mpWIVebYC+it9Q9+I3JTatSMiAIMl2dXURlsx8ya6yJXw+UF5jzym6ldzrekVCwJu2LIusvliexgTDjarL7ZXvG1U9qKeee/7SyunAzOdsVoiiUBxo72fDrttfFM11aZ6OHl6fCVyLV+XipzZs6D7ZX5l3GXL+Pft3DVeIx1STwFuWzzDgOcHyBC5w/HzjDoAAAAeJxjYGYAg/97GaYxYAEANa4CVgAAAAADAAgAAgARAAH//wADAAEAAAAMAAAAAAAAAAIAAQAAAG0AAQAAAAEAAAAKABwAHgABREZMVAAIAAQAAAAA//8AAAAAAAB4nGNgZGBg4GJwYXBjYHdx8wlh0EnKL8hnMEvOLygBkpVFOQxm6UWp2QxmGalJRQxmOYkleQxmDCxAXQz//zPAAQAycg9SAAA=) format("woff");font-weight:100 900}
-body.vw :not(.gate,.gate *){font-family:"UIAlt",sans-serif!important}
-#tA,#tB{cursor:default;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
-@media (prefers-reduced-motion:reduce){.gate-in{animation:none}.gate{transition:none}}
+/* sign in */
+.lock{max-width:420px;margin:0 auto;padding:calc(11vh + env(safe-area-inset-top)) 20px 40px;text-align:center}
+.app-icon{width:76px;height:76px;border-radius:18px;margin:0 auto 18px;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(180deg,#3a97ff,#0066d6);box-shadow:0 8px 20px rgba(0,102,214,.25)}
+.app-icon svg{width:36px;height:36px;stroke:#fff;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.lock h1{font-size:28px;font-weight:700;letter-spacing:-.02em}
+.lock > p{color:var(--dim);margin:6px 0 24px}
+.lock .group{text-align:left}
+.lock .row label{flex:none;width:88px}
+.lock .row input{text-align:left}
+.cta.wide{width:100%;margin-top:16px}
+.lock .si-hidden + .row::before{display:none}
+.si-eye{flex:none;background:none;border:0;color:var(--blue);font-size:15px;font-weight:600;padding:6px 0 6px 8px;cursor:pointer}
+.err{display:none;color:var(--red);font-size:15px;margin-top:12px}
+.lock .foot{margin:14px 0 0;text-align:center}
 
 /* messages */
 .toast{display:none;position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:60;
@@ -238,289 +213,25 @@ body.vw :not(.gate,.gate *){font-family:"UIAlt",sans-serif!important}
 </style>
 </head>
 <body>
-<script>
-window.Vw = (function () {
-  var armed = 0, away = 0;
-  function on() { document.body.classList.add("vw"); }
-  function off() { document.body.classList.remove("vw"); }
-  function wire() {
-    var a = document.getElementById("tA"), b = document.getElementById("tB");
-    if (!a || !b) return;
-    a.addEventListener("click", function () { armed = Date.now(); });
-    b.addEventListener("click", function () { if (Date.now() - armed < 3000) document.body.classList.toggle("vw"); armed = 0; });
-  }
-  document.addEventListener("visibilitychange", function () {
-    if (document.hidden) { away = Date.now(); return; }
-    if (away && Date.now() - away > 5 * 60000) on();
-    away = 0;
-  });
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", wire); else wire();
-  return { on: on, off: off };
-})();
-/* Face ID sign in. A passkey made on this device holds a key that unlocks the password kept
-   here, encrypted. The password then goes to the script exactly as if it was typed, so the
-   script and the 8 hour pass work the same as before. Nothing new is kept on the server. */
-window.PK = (function () {
-  var cfg = { store: "pk", id: "app", name: "App" };
-  var enc = new TextEncoder(), dec = new TextDecoder(), pending = null;
-  function b64(buf) { var b = new Uint8Array(buf), s = ""; for (var i = 0; i < b.length; i++) s += String.fromCharCode(b[i]); return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); }
-  function unb64(s) { s = String(s).replace(/-/g, "+").replace(/_/g, "/"); while (s.length % 4) s += "="; var bin = atob(s), b = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) b[i] = bin.charCodeAt(i); return b; }
-  function rnd(n) { var b = new Uint8Array(n); crypto.getRandomValues(b); return b; }
-  function err(code) { var e = new Error(code); e.code = code; return e; }
-  function ok() { return !!(window.PublicKeyCredential && window.crypto && crypto.subtle && window.isSecureContext && location.hostname); }
-  function read() { try { var j = JSON.parse(localStorage.getItem(cfg.store) || "null"); return j && j.id && j.ct && j.iv && j.salt ? j : null; } catch (e) { return null; } }
-  function ready() { return ok() && !!read(); }
-  function forget() { pending = null; try { localStorage.removeItem(cfg.store); } catch (e) {} }
-  function declined() { try { return +localStorage.getItem(cfg.store + ".no") > Date.now() - 30 * 86400000; } catch (e) { return false; } }
-  function decline() { pending = null; try { localStorage.setItem(cfg.store + ".no", String(Date.now())); } catch (e) {} }
-  function device() {
-    var u = navigator.userAgent || "", mac = /Mac/.test(navigator.platform || "") || /Mac OS X/.test(u);
-    if (/iPhone|iPod/.test(u)) return "iPhone";
-    if (/iPad/.test(u) || (mac && navigator.maxTouchPoints > 1)) return "iPad";
-    if (mac) return "Mac";
-    if (/Android/.test(u)) return "Android";
-    if (/Windows/.test(u)) return "Windows";
-    return "device";
-  }
-  /* What to call it on screen. iPhones say Face ID, Macs Touch ID, Windows has Hello. */
-  function bio() {
-    var d = device();
-    if (d === "iPhone" || d === "iPad") return "Face ID";
-    if (d === "Mac") return "Touch ID";
-    if (d === "Windows") return "Windows Hello";
-    return "fingerprint or face";
-  }
-  /* Can this browser do it at all. The answer is a guess until the first try. */
-  function canOffer(force) {
-    if (!ok() || declined() || (read() && !force)) return Promise.resolve(false);
-    try { localStorage.setItem("__pk", "1"); localStorage.removeItem("__pk"); } catch (e) { return Promise.resolve(false); }
-    var caps = PublicKeyCredential.getClientCapabilities ? PublicKeyCredential.getClientCapabilities() : Promise.resolve(null);
-    return caps.then(function (c) {
-      if (c && (c["extension:prf"] === false || c.userVerifyingPlatformAuthenticator === false)) return false;
-      if (c && c.userVerifyingPlatformAuthenticator === true) return true;
-      return PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable ? PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable() : false;
-    }).catch(function () { return false; });
-  }
-  function keyFrom(prf) { return crypto.subtle.importKey("raw", prf, { name: "AES-GCM" }, false, ["encrypt", "decrypt"]); }
-  function prfOf(cred) { var r = cred.getClientExtensionResults(); return r && r.prf && r.prf.results && r.prf.results.first ? r.prf.results.first : null; }
-  function seal(prf, pw, id, salt) {
-    var iv = rnd(12);
-    return keyFrom(prf).then(function (k) { return crypto.subtle.encrypt({ name: "AES-GCM", iv: iv }, k, enc.encode(pw)); })
-      .then(function (ct) {
-        localStorage.setItem(cfg.store, JSON.stringify({ id: b64(id), salt: b64(salt), iv: b64(iv), ct: b64(ct), t: Date.now() }));
-        try { localStorage.removeItem(cfg.store + ".no"); } catch (e) {}
-        pending = null;
-      });
-  }
-  function ask(id, salt) {
-    return navigator.credentials.get({ publicKey: {
-      challenge: rnd(32), rpId: location.hostname, userVerification: "required", timeout: 120000,
-      allowCredentials: [{ type: "public-key", id: id, transports: ["internal", "hybrid"] }],
-      extensions: { prf: { eval: { first: salt } } }
-    } });
-  }
-  /* First time: make the passkey, then lock the password with it. */
-  function enrol(pw) {
-    if (!ok()) return Promise.reject(err("unsupported"));
-    var salt = rnd(32), name = cfg.name + " " + device();
-    return navigator.credentials.create({ publicKey: {
-      rp: { name: cfg.name, id: location.hostname },
-      user: { id: rnd(16), name: name, displayName: name },
-      challenge: rnd(32), timeout: 120000,
-      pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
-      authenticatorSelection: { authenticatorAttachment: "platform", residentKey: "required", userVerification: "required" },
-      attestation: "none",
-      extensions: { prf: { eval: { first: salt } } }
-    } }).then(function (cred) {
-      var r = cred.getClientExtensionResults() || {};
-      if (!r.prf || r.prf.enabled === false) { decline(); throw err("noprf"); }
-      var prf = prfOf(cred);
-      if (prf) return seal(prf, pw, cred.rawId, salt);
-      // Some phones only hand the key over on a sign in, so do one straight away. Safari
-      // wants a fresh tap for that, which the page asks for if this is refused.
-      pending = { id: cred.rawId, salt: salt, pw: pw };
-      return finish();
-    });
-  }
-  function finish() {
-    if (!pending) return Promise.reject(err("nothing"));
-    var p = pending;
-    return ask(p.id, p.salt).then(function (cred) {
-      var prf = prfOf(cred);
-      if (!prf) { decline(); throw err("noprf"); }
-      return seal(prf, p.pw, p.id, p.salt);
-    });
-  }
-  /* Every time after: the passkey unlocks the password. */
-  function unlock() {
-    var s = read(); if (!s) return Promise.reject(err("none"));
-    return ask(unb64(s.id), unb64(s.salt)).then(function (cred) {
-      var prf = prfOf(cred); if (!prf) throw err("noprf");
-      return keyFrom(prf).then(function (k) { return crypto.subtle.decrypt({ name: "AES-GCM", iv: unb64(s.iv) }, k, unb64(s.ct)); })
-        .then(function (pt) { return dec.decode(pt); }, function () { throw err("broken"); });
-    });
-  }
-  /* Sort a failure into something the page can act on. */
-  function why(e, tapped) {
-    var c = e && (e.code || e.name) || "";
-    if (c === "NotAllowedError" || c === "AbortError" || c === "TimeoutError") return tapped ? "cancel" : "notap";
-    if (c === "cancel" || c === "notap" || c === "noprf" || c === "broken" || c === "none" || c === "nothing") return c;
-    if (c === "InvalidStateError") return "cancel";
-    return "unsupported";
-  }
-  return { setup: function (c) { cfg = c; }, ok: ok, ready: ready, canOffer: canOffer, enrol: enrol, finish: finish, unlock: unlock,
-    forget: forget, decline: decline, needsTap: function () { return !!pending; }, bio: bio, device: device, why: why };
-})();
-
-/* The sign in screen. One card in the middle of the screen. With a passkey on this device it
-   is a single tap, otherwise it is the password once, then an offer to switch to Face ID. */
-window.Gate = (function () {
-  var el, cb = {}, busy = false, held = "", was = false, title = "", mode = "";
-  var FACE = '<path d="M4 8.5V6.5A2.5 2.5 0 0 1 6.5 4h2M15.5 4h2A2.5 2.5 0 0 1 20 6.5v2M20 15.5v2a2.5 2.5 0 0 1-2.5 2.5h-2M8.5 20h-2A2.5 2.5 0 0 1 4 17.5v-2"/><path d="M9 9.3v1.4M15 9.3v1.4M8.7 14.2c.8 1.1 2 1.7 3.3 1.7s2.5-.6 3.3-1.7"/>';
-  var PRINT = '<path d="M6 8.2A6.8 6.8 0 0 1 18.8 11c0 2.6-.3 5.1-1 7.4"/><path d="M8.4 9.6A4.3 4.3 0 0 1 16.3 11c0 3.4-.5 6.3-1.5 8.8"/><path d="M10.6 11.1a1.4 1.4 0 0 1 2.8 0c0 3.6-.7 6.7-2 9.4"/><path d="M12 13.9c0 2.4-.5 4.6-1.5 6.8"/><path d="M5.4 11c0 2.6-.2 4.9-.8 7"/>';
-  function $(id) { return document.getElementById(id); }
-  function msg(e) {
-    return e === "wrong_password" ? "That password isn't right." : e === "locked" ? "Too many tries. Wait 10 minutes." :
-      e === "no_password" ? "Sign in isn't set up yet." : e === "net" ? "No connection. Check it and try again." : "Couldn't sign in. Try again.";
-  }
-  function note(t, kind) { var n = $("gateNote"); if (!n) return; n.textContent = t || ""; n.className = "gate-note" + (kind ? " " + kind : ""); }
-  function set(m) {
-    mode = m; el.setAttribute("data-mode", m);
-    $("gateTitle").textContent = m === "offer" ? "Use " + PK.bio() + " next time?" : m === "finish" ? "One more step" : m === "settings" ? "Signed in" : title;
-    if (m === "pw") focusPw();
-  }
-  function focusPw() {
-    if (!(window.matchMedia && matchMedia("(hover:hover) and (pointer:fine)").matches)) return;
-    setTimeout(function () { var i = $("pw"); if (i && mode === "pw") i.focus(); }, 60);
-  }
-  function setBusy(on, id, txt) {
-    busy = on; el.classList.toggle("busy", on);
-    var b = id && $(id), s = b && (b.querySelector("span") || b);
-    if (s) { if (on) { s.dataset.was = s.textContent; s.textContent = txt; } else if (s.dataset.was) { s.textContent = s.dataset.was; delete s.dataset.was; } }
-  }
-  function glyphs() {
-    var apple = /iPhone|iPad|Mac/.test(PK.device());
-    var svgs = el.querySelectorAll(".gate-btn svg");
-    for (var i = 0; i < svgs.length; i++) svgs[i].innerHTML = apple ? FACE : PRINT;
-    var back = $("gateBack"); if (back) back.textContent = "Use " + PK.bio();
-    var off = $("setFaceOff"); if (off) off.textContent = "Turn off " + PK.bio() + " on this device";
-  }
-  /* Open the screen. msg is a reason, like being signed out after 8 hours. */
-  function show(m) {
-    el.classList.remove("hide", "off");
-    was = PK.ready();
-    var back = $("gateBack"); if (back) back.hidden = !was;
-    note(m || "", m ? "bad" : "");
-    var pwIn = $("pw"); if (pwIn) pwIn.value = "";
-    if (was) { set("face"); face(false); }
-    else { set("pw"); if (!m && cb.storeBlocked && cb.storeBlocked()) note("Private tab. You'll have to sign in again next time."); }
-  }
-  function hide() { el.classList.add("off"); setTimeout(function () { el.classList.add("hide"); el.classList.remove("off"); }, 240); }
-  function enter() { held = ""; hide(); cb.enter(); }
-  /* Password typed in. */
-  function submit() {
-    if (busy) return;
-    var pw = $("pw").value;
-    if (!pw) { note("Type the password.", "bad"); focusPw(); return; }
-    note(""); setBusy(true, "siBtn", "Signing in");
-    cb.login(pw).then(function (r) {
-      if (r && r.ok) { $("pw").value = ""; after(pw); }
-      else note(msg(r && r.error), "bad");
-    }).catch(function () { note(msg("net"), "bad"); }).then(function () { setBusy(false, "siBtn"); });
-  }
-  /* Signed in with the password: offer the switch, unless this device already has it. */
-  function after(pw) {
-    PK.canOffer(was).then(function (can) {
-      if (can) { held = pw; set("offer"); note(""); }
-      else enter();
-    });
-  }
-  /* The passkey unlocks the password, which signs in like normal. */
-  function face(tapped) {
-    if (busy) return;
-    note(""); setBusy(true, "gateFace", "Signing in");
-    PK.unlock().then(function (pw) {
-      return cb.login(pw).then(function (r) {
-        if (r && r.ok) return enter();
-        if (r && r.error === "wrong_password") { PK.forget(); was = false; $("gateBack").hidden = true; set("pw"); note("The password has changed. Type it once.", "bad"); return; }
-        note(msg(r && r.error), "bad");
-      }, function () { note(msg("net"), "bad"); });
-    }).catch(function (e) {
-      var w = PK.why(e, tapped);
-      if (w === "cancel" || w === "notap") return;
-      PK.forget(); was = false; $("gateBack").hidden = true; set("pw");
-    }).then(function () { setBusy(false, "gateFace"); });
-  }
-  function offerOn() {
-    if (busy || !held) return;
-    note(""); setBusy(true, "offerOn", "Setting up");
-    PK.enrol(held).then(function () { done(true); }).catch(function (e) {
-      if (PK.needsTap()) { set("finish"); return; }
-      if (PK.why(e, true) === "cancel") PK.decline();
-      done(false);
-    }).then(function () { setBusy(false, "offerOn"); });
-  }
-  function finish() {
-    if (busy) return;
-    note(""); setBusy(true, "finishBtn", "Finishing");
-    PK.finish().then(function () { done(true); }).catch(function (e) {
-      if (PK.why(e, true) === "cancel") note("Didn't finish. Tap Finish to try again.", "bad");
-      else done(false);
-    }).then(function () { setBusy(false, "finishBtn"); });
-  }
-  function done(on) { if (on && cb.toast) cb.toast(PK.bio() + " is on"); enter(); }
-  function skip() { PK.decline(); enter(); }
-  /* The settings view, for pages with one: sign out, or turn the passkey off here. */
-  function settings() {
-    el.classList.remove("hide", "off"); set("settings");
-    var off = $("setFaceOff"); if (off) off.hidden = !PK.ready();
-    note("Signed in on this device.", "good");
-  }
-  function wire() {
-    var f = $("signin"); if (f) f.addEventListener("submit", function (e) { e.preventDefault(); submit(); });
-    on("pwEye", function (b) { var k = $("pw"), s = k.type === "password"; k.type = s ? "text" : "password"; b.textContent = s ? "Hide" : "Show"; k.focus(); });
-    on("gateFace", function () { face(true); });
-    on("gatePw", function () { set("pw"); note(""); });
-    on("gateBack", function () { set("face"); face(true); });
-    on("offerOn", offerOn); on("offerNo", skip);
-    on("finishBtn", finish); on("finishNo", skip);
-    on("setDone", function () { hide(); });
-    on("setOut", function () { if (cb.signOut) cb.signOut(); });
-    on("setFaceOff", function (b) { PK.forget(); b.hidden = true; note(PK.bio() + " is off on this device.", "good"); });
-  }
-  function on(id, fn) { var b = $(id); if (b) b.addEventListener("click", function () { fn(b); }); }
-  return {
-    init: function (o) { cb = o; el = $("gate"); title = $("gateTitle").textContent; glyphs(); wire(); },
-    show: show, hide: hide, settings: settings, note: note, busy: function () { return busy; }
-  };
-})();
-</script>
 
 <!-- sign in -->
-<div class="gate hide" id="gate" data-mode="pw" aria-label="Sign in">
-  <div class="gate-in">
-    <div class="gate-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6.5 3h8l4 4v14h-12z"/><path d="M14.5 3v4h4"/><path d="M9.5 12.5h6M9.5 16.5h4"/></svg></div>
-    <h1 id="gateTitle">Orders</h1>
-    <div class="g g-face">
-      <button class="gate-btn" id="gateFace" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"></svg><span>Sign in</span></button>
-      <button class="gate-link" id="gatePw" type="button">Use password</button>
+<div class="lock" id="lock">
+  <div class="app-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6.5 3h8l4 4v14h-12z"/><path d="M14.5 3v4h4"/><path d="M9.5 12.5h6M9.5 16.5h4"/></svg></div>
+  <h1>Orders</h1>
+  <p>Sign in with the dashboard password.</p>
+  <div id="storeWarn" class="callout warn" style="display:none;text-align:left"></div>
+  <form id="lockForm" autocomplete="on" action="#">
+    <div class="group">
+      <div class="row si-hidden" style="display:none"><label for="uIn">Link</label>
+        <input type="text" id="uIn" name="username" autocomplete="username" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Script link"></div>
+      <div class="row"><label for="kIn">Password</label>
+        <input type="password" id="kIn" name="password" autocomplete="current-password" spellcheck="false" enterkeyhint="go" placeholder="Required">
+        <button type="button" class="si-eye" id="pwEye" onclick="pwToggle()">Show</button></div>
     </div>
-    <form class="g g-pw" id="signin" autocomplete="on" action="#" novalidate>
-      <input class="gate-hid" type="text" name="username" autocomplete="username" value="PPR dashboard" tabindex="-1" aria-hidden="true">
-      <div class="gate-field"><input id="pw" type="password" name="password" autocomplete="current-password" placeholder="Password" enterkeyhint="go" autocapitalize="off" spellcheck="false" aria-label="Password"><button type="button" class="gate-eye" id="pwEye">Show</button></div>
-      <button class="gate-btn" type="submit" id="siBtn"><span>Sign in</span></button>
-      <button class="gate-link" id="gateBack" type="button" hidden>Use Face ID</button>
-    </form>
-    <div class="g g-offer">
-      <button class="gate-btn" id="offerOn" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"></svg><span>Turn on</span></button>
-      <button class="gate-link" id="offerNo" type="button">Not now</button>
-    </div>
-    <div class="g g-finish">
-      <button class="gate-btn" id="finishBtn" type="button"><span>Finish</span></button>
-      <button class="gate-link" id="finishNo" type="button">Not now</button>
-    </div>
-    <p class="gate-note" id="gateNote" role="status"></p>
-  </div>
+    <button class="cta wide" id="unlockBtn" type="submit">Sign in</button>
+  </form>
+  <div class="err" id="lockErr"></div>
+  <p class="foot"><span id="saveHint" style="display:none">Your phone can save this password and fill it in next time with Face ID. Nothing is kept on this page.</span></p>
 </div>
 
 <!-- new order -->
@@ -533,7 +244,7 @@ window.Gate = (function () {
       <button class="icon" id="lockBtn" type="button" title="Sign out" aria-label="Sign out"><svg viewBox="0 0 24 24"><rect x="4.5" y="11" width="15" height="10" rx="2.5"/><path d="M8 11V7.5a4 4 0 0 1 8 0V11"/></svg></button>
     </div>
   </div>
-  <h1 class="large-title"><span id="tA">New</span> <span id="tB">order</span></h1>
+  <h1 class="large-title">New order</h1>
   <div class="sub" id="hdrSub">Loading</div>
 
   <section class="sec" aria-labelledby="hCust">
@@ -627,27 +338,41 @@ window.Gate = (function () {
 /* ---------- config ---------- */
 var CFG = { ordersSheet:"Customer_Orders", productsSheet:"Products", contactsSheet:"Contacts" };
 
-/* Exact columns, locked to the sheet. No header guessing.
-   F is deliberately missing: the sheet fills it with a formula off E. */
+/* Each field is written to the sheet column with this heading. The hub sends the sheet's
+   real header row, so a column added to the sheet (like Address in D) can never push an
+   order into the wrong columns. The numbers are only the fallback for a hub script too old
+   to send the headings, and they match the sheet as it was before Address went in.
+   Product Name is deliberately missing: the sheet fills it with a formula off the SKU. */
 var FIELDS = [
-  {k:"orderDate", c:0,  lbl:"Date"},
-  {k:"source",    c:1,  lbl:"Source"},
-  {k:"customer",  c:2,  lbl:"Customer"},
-  {k:"mobile",    c:3,  lbl:"Mobile"},
-  {k:"sku",       c:4,  lbl:"Product"},
-  {k:"qty",       c:6,  lbl:"Qty"},
-  {k:"payStatus", c:15, lbl:"Payment status"},
-  {k:"payMethod", c:16, lbl:"Paid by"},
-  {k:"funds",     c:17, lbl:"Funds holder"},
-  {k:"fulfil",    c:18, lbl:"Fulfilment"},
-  {k:"packed",    c:19, lbl:"Packed"},
-  {k:"stockUp",   c:20, lbl:"Stock updated"},
-  {k:"payHit",    c:21, lbl:"Payment hit"},
-  {k:"freeVial",  c:22, lbl:"Free vial"},
-  {k:"credit",    c:23, lbl:"Credit used"},
-  {k:"notes",     c:24, lbl:"Notes"}
+  {k:"orderDate", c:0,  h:"Order Date",          lbl:"Date"},
+  {k:"source",    c:1,  h:"Source",              lbl:"Source"},
+  {k:"customer",  c:2,  h:"Customer Name",       lbl:"Customer"},
+  {k:"mobile",    c:3,  h:"Phone & Email",       lbl:"Mobile"},
+  {k:"sku",       c:4,  h:"SKU",                 lbl:"Product"},
+  {k:"qty",       c:6,  h:"Qty",                 lbl:"Qty"},
+  {k:"payStatus", c:15, h:"Payment Status",      lbl:"Payment status"},
+  {k:"payMethod", c:16, h:"Payment Method",      lbl:"Paid by"},
+  {k:"funds",     c:17, h:"Funds Holder",        lbl:"Funds holder"},
+  {k:"fulfil",    c:18, h:"Fulfilment Status",   lbl:"Fulfilment"},
+  {k:"packed",    c:19, h:"Packed?",             lbl:"Packed"},
+  {k:"stockUp",   c:20, h:"Stock Updated?",      lbl:"Stock updated"},
+  {k:"payHit",    c:21, h:"Payment in account?", lbl:"Payment hit"},
+  {k:"freeVial",  c:22, h:"Free Vial?",          lbl:"Free vial"},
+  {k:"credit",    c:23, h:"Credit Used ($)",     lbl:"Credit used"},
+  {k:"notes",     c:24, h:"Notes",               lbl:"Notes"}
 ];
 var COL = {}; FIELDS.forEach(function(f){ COL[f.k] = f.c; });
+var COL_MISSING = [];   // headings the sheet no longer has; nothing is saved while this has anything in it
+function hNorm(h){ return String(h==null?"":h).trim().toLowerCase().replace(/\s+/g," "); }
+function mapCols(oc){
+  COL_MISSING = [];
+  if(!oc || typeof oc!=="object") return;   // old hub script: stay on the fallback numbers
+  var norm={}; Object.keys(oc).forEach(function(h){ var k=hNorm(h); if(norm[k]==null) norm[k]=oc[h]; });
+  FIELDS.forEach(function(f){
+    var ix=norm[hNorm(f.h)];
+    if(ix!=null && ix>=0){ f.c=ix; COL[f.k]=ix; } else COL_MISSING.push(f.h);
+  });
+}
 
 /* Only for reading history back. The payload has columns stripped out of it,
    so these get found by header name, not by position. */
@@ -925,6 +650,7 @@ function lsGet(k){try{return localStorage.getItem(k);}catch(e){return null;}}
 /* Does this browser actually keep what we save? Private tabs and blocked site data
    both fail here, and iOS also wipes stored data for any site untouched for 7 days. */
 function storageOK(){try{localStorage.setItem("__probe","1");var v=localStorage.getItem("__probe");localStorage.removeItem("__probe");return v==="1";}catch(e){return false;}}
+function showStoreWarn(m){var e=$("storeWarn");if(!e)return;e.innerHTML=m;e.style.display="block";}
 function bannerWarn(m){
   var b=document.getElementById("topWarn");
   if(!b){b=document.createElement("div");b.id="topWarn";
@@ -973,55 +699,63 @@ function baseName(full){
 /* ---------- unlock ---------- */
 (function initLock(){
   var savedKey = lsGet("peps-script-key") || "", savedExp = Number(lsGet("peps-script-exp") || 0);
-  URL_ = HUB_URL;
-  PK.setup({store:"peps.pk", name:"PEPS Hub"});
-  Gate.init({login:login, enter:start, toast:function(m){ toast(m,"ok"); }, signOut:lockUp, storeBlocked:function(){ return !storageOK(); }});
+  URL_ = HUB_URL; $("uIn").value = "PPR dashboard";
   if(savedKey && (!savedExp || savedExp > Date.now())){ KEY=savedKey; armOut(savedExp); start(); }
-  else Gate.show("");
+  $("lockForm").addEventListener("submit", function(e){ e.preventDefault(); doUnlock(); });
+  if(!storageOK()){
+    showStoreWarn("This browser will not remember your login.<br>You are either in a private tab, or cookies and site data are switched off for this site. Fix that and it will stick.");
+  }else{
+    var hint=$("saveHint"); if(hint) hint.style.display="inline";
+  }
 })();
 
-/* Sign in: the password goes to the script once, and an 8 hour pass comes back. Typed or
-   unlocked with Face ID on the device, it is the same call. */
-function login(pw){
-  return fetch(URL_, {method:"POST", redirect:"follow", headers:{"Content-Type":"text/plain;charset=utf-8"}, body: JSON.stringify({action:"login", pw:pw})})
+/* Sign in: the password goes to the script once, and an 8 hour pass comes back. */
+function pwToggle(){ var k=$("kIn"), e=$("pwEye"); if(!k||!e) return; var show=k.type==="password"; k.type=show?"text":"password"; e.textContent=show?"Hide":"Show"; }
+function doUnlock(){
+  var pw=$("kIn").value, btn=$("unlockBtn");
+  if(!pw){ showLockErr("Enter the password."); $("kIn").focus(); return; }
+  URL_=HUB_URL; btn.disabled=true; btn.textContent="Signing in"; var le0=$("lockErr"); if(le0) le0.style.display="none";
+  fetch(URL_, {method:"POST", redirect:"follow", headers:{"Content-Type":"text/plain;charset=utf-8"}, body: JSON.stringify({action:"login", pw:pw})})
   .then(function(r){ return r.json(); })
   .then(function(j){
     if(j && j.ok && j.pass){
       KEY=j.pass;
       var ok=lsSet("peps-script-key",KEY) && lsSet("peps-script-exp",String(j.exp||0));
+      if(window.__credStore) window.__credStore(URL_,pw);
+      $("kIn").value=""; var le=$("lockErr"); if(le) le.style.display="none";
       if(!ok) bannerWarn("Signed in for this visit only. This browser is not saving your login, so you will have to type it again next time.");
-      armOut(+j.exp||0);
-      if(j.data&&typeof j.data==="object"&&!j.data.error){ cacheSave(j.data); FRESH=true; }   // the script can send the sheet back with the pass
-      start();
-      return {ok:true};
+      armOut(+j.exp||0); start(); return;
     }
-    return {ok:false, error:j && j.error};
-  });
+    var e=j && j.error;
+    showLockErr(e==="wrong_password"?"That password isn't right.":e==="locked"?"Too many tries. Wait 10 minutes, then try again.":e==="no_password"?"Sign in isn't set up yet.":"Couldn't sign in. Try again.");
+  })
+  .catch(function(){ showLockErr("No connection. Check it and try again."); })
+  .finally(function(){ btn.disabled=false; btn.textContent="Sign in"; });
 }
 // Signs out when the 8 hours are up, even with the page left open.
 function armOut(exp){
   clearTimeout(OUT_T);
-  if(exp) OUT_T=setTimeout(function(){ lockUp(""); }, Math.min(Math.max(0,exp-Date.now())+500, 2147000000));
+  if(exp) OUT_T=setTimeout(function(){ lockUp(); showLockErr("Signed out after 8 hours. Sign in again."); }, Math.min(Math.max(0,exp-Date.now())+500, 2147000000));
 }
 document.addEventListener("visibilitychange", function(){
   var e=Number(lsGet("peps-script-exp")||0);
-  if(!document.hidden && KEY && e && e<Date.now()) lockUp("");
+  if(!document.hidden && KEY && e && e<Date.now()){ lockUp(); showLockErr("Signed out after 8 hours. Sign in again."); }
 });
-function showLockErr(m){ Gate.note(m,"bad"); }
+function showLockErr(m){ var e=$("lockErr"); e.textContent=m; e.style.display="block"; }
 
-function lockUp(msg){
+function lockUp(){
   try{ localStorage.removeItem("peps-script-key"); localStorage.removeItem("peps-script-exp"); }catch(e){}
-  clearTimeout(OUT_T); KEY=""; DATA=null; STARTED=false;
+  clearTimeout(OUT_T); KEY=""; DATA=null;
+  var ki=$("kIn"); if(ki) ki.value="";
   $("app").classList.add("hide");
   $("bar").classList.add("hide");
-  Gate.show(typeof msg==="string" ? msg : "");
+  $("lock").classList.remove("hide");
+  $("lockErr").style.display="none";
 }
 
 /* ---------- load ---------- */
-var STARTED=false, FRESH=false;
 function start(){
-  if(STARTED) return; STARTED=true;   // the pass arriving starts the load; closing the sign in screen must not start it twice
-  Vw.on();
+  $("lock").classList.add("hide");
   $("app").classList.remove("hide");
   $("bar").classList.remove("hide");
   DATA_READY=false; setConn("loading");
@@ -1041,7 +775,6 @@ function cacheLoad(){
 }
 function loadData(){
   var cached=cacheLoad();
-  if(cached && FRESH){ FRESH=false; DATA=cached.data; DATA_READY=true; build(); setConn("ready"); return; }
   if(cached && !DATA_READY){
     DATA=cached.data; DATA_READY=true; build();
     setConn("cached");
@@ -1052,7 +785,7 @@ function loadData(){
   fetch(apiUrl(), {method:"GET", redirect:"follow"})
     .then(function(r){ return r.json(); })
     .then(function(j){
-      if(j && j.error==="unauthorized"){ lockUp(""); return; }
+      if(j && j.error==="unauthorized"){ lockUp(); showLockErr("You've been signed out. Sign in again."); return; }
       if(j && j.error) throw new Error(j.error);
       DATA=j; cacheSave(j);
       REBUILDING=DATA_READY;                 // true when we already painted from cache
@@ -1141,6 +874,7 @@ function build(){
   var headers = orders[hdrRow] || [];
   var lower = headers.map(function(h){ return String(h==null?"":h).trim().toLowerCase(); });
 
+  mapCols(DATA._orderCols);
   RCOL = {};
   for(var rk in READ_H){
     var ix=-1, names=READ_H[rk];
@@ -1522,6 +1256,7 @@ function render(){
 /* ---------- submit ---------- */
 function submitOrder(){
   if(busy) return;
+  if(COL_MISSING.length){ toast("Can't find the "+COL_MISSING.join(", ")+" column"+(COL_MISSING.length>1?"s":"")+" on the sheet. Nothing saved.","bad"); return; }
   var rows=buildRows();
   if(!rows.length || !customerName()){ toast("Need a customer and at least one product.","bad"); return; }
 
@@ -1729,10 +1464,103 @@ $("addrNew").addEventListener("input", addrSync);
 $("addrSave").addEventListener("click", addrSave);
 document.addEventListener("keydown", function(e){ if(e.key==="Escape" && !$("addrMask").classList.contains("hide")) addrClose(); });
 
-$("lockBtn").addEventListener("click", function(){ lockUp(""); });
+$("lockBtn").addEventListener("click", lockUp);
 window.addEventListener("beforeunload", function(e){
   if(validLines().length && customerName()){ e.preventDefault(); e.returnValue=""; }
 });
+
+/* ---------- login polish: works the same in Safari and Chrome ---------- */
+(function(){
+  var F=document.getElementById("lockForm")||document.getElementById("setupForm");
+  if(!F)return;
+  var U=document.getElementById("uIn")||document.getElementById("urlInput");
+  var K=document.getElementById("kIn")||document.getElementById("keyInput");
+  if(!U||!K)return;
+  var go=(typeof doUnlock==="function")?doUnlock:((typeof connect==="function")?connect:null);
+
+  /* iOS keyboard: Next on the URL, Go on the key */
+  U.setAttribute("enterkeyhint","next");
+  K.setAttribute("enterkeyhint","go");
+  U.setAttribute("autocapitalize","off");
+  U.setAttribute("autocorrect","off");
+
+  function mini(txt,onTap){
+    var b=document.createElement("button");
+    b.type="button"; b.textContent=txt;
+    b.style.cssText="position:absolute;right:7px;top:50%;transform:translateY(-50%);z-index:3;"+
+      "background:var(--fill);color:var(--blue);border:0;border-radius:8px;padding:6px 10px;"+
+      "font-size:13px;font-weight:600;cursor:pointer;-webkit-appearance:none;line-height:1";
+    b.addEventListener("click",onTap);
+    return b;
+  }
+  function wrap(inp,btn){
+    var holder=document.createElement("div");
+    holder.style.cssText="position:relative;display:block;flex:1;min-width:0";
+    inp.parentNode.insertBefore(holder,inp);
+    holder.appendChild(inp); holder.appendChild(btn);
+    inp.style.paddingRight="66px";
+    inp.style.width="100%";
+    inp.style.boxSizing="border-box";
+  }
+
+  /* The sign in has its own Show button and nothing to paste now, so these only run on older pages. */
+  if(U.getAttribute("autocomplete")!=="username"){
+    wrap(U, mini("Paste", function(){
+      if(navigator.clipboard&&navigator.clipboard.readText){
+        navigator.clipboard.readText().then(function(t){
+          if(t&&t.trim()){U.value=t.trim();K.focus();}else U.focus();
+        })["catch"](function(){U.focus();});
+      }else U.focus();
+    }));
+  }
+  if(!document.getElementById("pwEye")){
+    var eye=mini("Show", function(){
+      var hidden=K.type==="password";
+      K.type=hidden?"text":"password";
+      eye.textContent=hidden?"Hide":"Show";
+    });
+    wrap(K,eye);
+  }
+
+  /* Chrome and Android can store and refill this silently. Safari ignores it
+     harmlessly and falls back to the normal keychain prompt. */
+  window.__credStore=function(u,k){
+    try{
+      if(window.PasswordCredential&&navigator.credentials&&navigator.credentials.store){
+        navigator.credentials.store(new window.PasswordCredential({id:u,password:k,name:"PPR Hub"}))["catch"](function(){});
+      }
+    }catch(e){}
+  };
+
+  var lockEl=document.getElementById("lock");
+  var setupEl=document.getElementById("setupBox");
+  var needsLogin = lockEl ? !lockEl.classList.contains("hide")
+                 : (setupEl ? setupEl.style.display!=="none" : false);
+
+  if(needsLogin){
+    try{
+      if(window.PasswordCredential&&navigator.credentials&&navigator.credentials.get&&!K.value){
+        navigator.credentials.get({password:true,mediation:"optional"}).then(function(c){
+          if(c&&c.password&&!K.value){ K.value=c.password; }   // fill it in only; signing in is always a tap, so the 8 hour sign out holds
+        })["catch"](function(){});
+      }
+    }catch(e){}
+  }
+
+  /* The only thing that truly survives on an iPhone. Both Safari and Chrome on iOS
+     get their saved data wiped after 7 days of not opening the site. A home screen
+     copy is exempt from that. */
+  var standalone=(window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches)||navigator.standalone===true;
+  var iOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+  if(iOS&&!standalone&&needsLogin){
+    var tip=document.createElement("p");
+    tip.className="callout warn"; tip.style.textAlign="left";
+    tip.innerHTML='<b>Stay signed in</b><br>Tap Share, then Add to Home Screen, and open it from that icon. iPhone forgets logins for sites you have not opened in 7 days, but leaves home screen apps alone.';
+    F.parentNode.insertBefore(tip,F.nextSibling);
+  }
+})();
+
+
 
 /* ---------- the real reason it keeps forgetting ---------- */
 (function(){
