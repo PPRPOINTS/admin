@@ -182,6 +182,19 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 .lock .si-hidden + .row::before{display:none}
 .si-eye{flex:none;background:none;border:0;color:var(--blue);font-size:15px;font-weight:600;padding:6px 0 6px 8px;cursor:pointer}
 .err{display:none;color:var(--red);font-size:15px;margin-top:12px}
+.err.good{color:var(--green)}
+/* the sign in has a few faces: Face ID, the password, and the offer to switch; one shows at a time */
+.lock .g{display:none}
+.lock[data-mode="face"] .g-face,.lock[data-mode="pw"] .g-pw,.lock[data-mode="offer"] .g-offer,.lock[data-mode="finish"] .g-finish{display:block}
+.lock[data-mode="auto"] .g-face{display:block}
+.lock[data-mode="auto"] #faceBtn{display:none}
+.lock .cta.fid{display:flex;align-items:center;justify-content:center;gap:10px}
+.lock .cta svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.lock .cta svg:empty{display:none}
+.lock .lnk{display:block;margin:14px auto 0;border:0;background:transparent;color:var(--blue);font-size:16px;font-weight:500;padding:8px 12px;cursor:pointer}
+.lock .lnk[hidden]{display:none}
+.lock.busy .cta{opacity:.6;pointer-events:none}
+.lock:not([data-mode="pw"]) .foot{display:none}
 .lock .foot{margin:14px 0 0;text-align:center}
 
 /* messages */
@@ -215,12 +228,18 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 <body>
 
 <!-- sign in -->
-<div class="lock" id="lock">
+<div class="lock" id="lock" data-mode="pw">
   <div class="app-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6.5 3h8l4 4v14h-12z"/><path d="M14.5 3v4h4"/><path d="M9.5 12.5h6M9.5 16.5h4"/></svg></div>
-  <h1>Orders</h1>
-  <p>Sign in with the dashboard password.</p>
+  <h1 id="lockTitle">Orders</h1>
+  <p id="lockSub">Sign in with the dashboard password.</p>
   <div id="storeWarn" class="callout warn" style="display:none;text-align:left"></div>
-  <form id="lockForm" autocomplete="on" action="#">
+  <!-- Face ID set up on this phone: it is asked for the moment the page opens, with nothing to tap.
+       The button only shows if that comes to nothing. -->
+  <div class="g g-face">
+    <button class="cta wide fid" id="faceBtn" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"></svg><span>Sign in with Face ID</span></button>
+    <button type="button" class="lnk" id="facePw">Use password</button>
+  </div>
+  <form id="lockForm" class="g g-pw" autocomplete="on" action="#">
     <div class="group">
       <div class="row si-hidden" style="display:none"><label for="uIn">Link</label>
         <input type="text" id="uIn" name="username" autocomplete="username" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Script link"></div>
@@ -229,7 +248,16 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
         <button type="button" class="si-eye" id="pwEye" onclick="pwToggle()">Show</button></div>
     </div>
     <button class="cta wide" id="unlockBtn" type="submit">Sign in</button>
+    <button type="button" class="lnk" id="faceBack" hidden>Use Face ID</button>
   </form>
+  <div class="g g-offer">
+    <button class="cta wide fid" id="offerOn" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"></svg><span>Turn on</span></button>
+    <button type="button" class="lnk" id="offerNo">Not now</button>
+  </div>
+  <div class="g g-finish">
+    <button class="cta wide" id="finishBtn" type="button"><span>Finish</span></button>
+    <button type="button" class="lnk" id="finishNo">Not now</button>
+  </div>
   <div class="err" id="lockErr"></div>
   <p class="foot"><span id="saveHint" style="display:none">Your phone can save this password and fill it in next time with Face ID. Nothing is kept on this page.</span></p>
 </div>
@@ -326,6 +354,126 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
     <button class="cta wide" id="addrSave" type="button" disabled>Save address</button>
   </div>
 </div>
+<script>
+/* Face ID sign in. A passkey made on this device holds a key that unlocks the password kept
+   here, encrypted. The password then goes to the script exactly as if it was typed, so the
+   script and the 8 hour pass work the same as before. Nothing new is kept on the server. */
+window.PK = (function () {
+  var cfg = { store: "pk", id: "app", name: "App", since: 0 };
+  var enc = new TextEncoder(), dec = new TextDecoder(), pending = null, ctl = null;
+  function b64(buf) { var b = new Uint8Array(buf), s = ""; for (var i = 0; i < b.length; i++) s += String.fromCharCode(b[i]); return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); }
+  function unb64(s) { s = String(s).replace(/-/g, "+").replace(/_/g, "/"); while (s.length % 4) s += "="; var bin = atob(s), b = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) b[i] = bin.charCodeAt(i); return b; }
+  function rnd(n) { var b = new Uint8Array(n); crypto.getRandomValues(b); return b; }
+  function err(code) { var e = new Error(code); e.code = code; return e; }
+  function ok() { return !!(window.PublicKeyCredential && window.crypto && crypto.subtle && window.isSecureContext && location.hostname); }
+  function read() { try { var j = JSON.parse(localStorage.getItem(cfg.store) || "null"); return j && j.id && j.ct && j.iv && j.salt ? j : null; } catch (e) { return null; } }
+  function ready() { return ok() && !!read(); }
+  function forget() { pending = null; try { localStorage.removeItem(cfg.store); } catch (e) {} }
+  // A "not now" lasts 30 days, and one from before this version of the page is forgotten.
+  function declined() { try { var t = +localStorage.getItem(cfg.store + ".no"); return t > Date.now() - 30 * 86400000 && t > (cfg.since || 0); } catch (e) { return false; } }
+  function decline() { pending = null; try { localStorage.setItem(cfg.store + ".no", String(Date.now())); } catch (e) {} }
+  function device() {
+    var u = navigator.userAgent || "", mac = /Mac/.test(navigator.platform || "") || /Mac OS X/.test(u);
+    if (/iPhone|iPod/.test(u)) return "iPhone";
+    if (/iPad/.test(u) || (mac && navigator.maxTouchPoints > 1)) return "iPad";
+    if (mac) return "Mac";
+    if (/Android/.test(u)) return "Android";
+    if (/Windows/.test(u)) return "Windows";
+    return "device";
+  }
+  /* What to call it on screen. iPhones say Face ID, Macs Touch ID, Windows has Hello. */
+  function bio() {
+    var d = device();
+    if (d === "iPhone" || d === "iPad") return "Face ID";
+    if (d === "Mac") return "Touch ID";
+    if (d === "Windows") return "Windows Hello";
+    return "fingerprint or face";
+  }
+  /* Can this browser do it at all. The answer is a guess until the first try. */
+  function canOffer(force) {
+    if (!ok() || declined() || (read() && !force)) return Promise.resolve(false);
+    try { localStorage.setItem("__pk", "1"); localStorage.removeItem("__pk"); } catch (e) { return Promise.resolve(false); }
+    var caps = PublicKeyCredential.getClientCapabilities ? PublicKeyCredential.getClientCapabilities() : Promise.resolve(null);
+    return caps.then(function (c) {
+      if (c && (c["extension:prf"] === false || c.userVerifyingPlatformAuthenticator === false)) return false;
+      if (c && c.userVerifyingPlatformAuthenticator === true) return true;
+      return PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable ? PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable() : false;
+    }).catch(function () { return false; });
+  }
+  function keyFrom(prf) { return crypto.subtle.importKey("raw", prf, { name: "AES-GCM" }, false, ["encrypt", "decrypt"]); }
+  function prfOf(cred) { var r = cred.getClientExtensionResults(); return r && r.prf && r.prf.results && r.prf.results.first ? r.prf.results.first : null; }
+  function seal(prf, pw, id, salt) {
+    var iv = rnd(12);
+    return keyFrom(prf).then(function (k) { return crypto.subtle.encrypt({ name: "AES-GCM", iv: iv }, k, enc.encode(pw)); })
+      .then(function (ct) {
+        localStorage.setItem(cfg.store, JSON.stringify({ id: b64(id), salt: b64(salt), iv: b64(iv), ct: b64(ct), t: Date.now() }));
+        try { localStorage.removeItem(cfg.store + ".no"); } catch (e) {}
+        pending = null;
+      });
+  }
+  function ask(id, salt) {
+    cancel(); ctl = window.AbortController ? new AbortController() : null;
+    return navigator.credentials.get({ signal: ctl ? ctl.signal : undefined, publicKey: {
+      challenge: rnd(32), rpId: location.hostname, userVerification: "required", timeout: 120000,
+      allowCredentials: [{ type: "public-key", id: id, transports: ["internal", "hybrid"] }],
+      extensions: { prf: { eval: { first: salt } } }
+    } });
+  }
+  // Drop a Face ID ask that's still waiting, so the password can be used instead.
+  function cancel() { if (ctl) { try { ctl.abort(); } catch (e) {} ctl = null; } }
+  /* First time: make the passkey, then lock the password with it. */
+  function enrol(pw) {
+    if (!ok()) return Promise.reject(err("unsupported"));
+    var salt = rnd(32), name = cfg.name + " " + device();
+    return navigator.credentials.create({ publicKey: {
+      rp: { name: cfg.name, id: location.hostname },
+      user: { id: rnd(16), name: name, displayName: name },
+      challenge: rnd(32), timeout: 120000,
+      pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
+      authenticatorSelection: { authenticatorAttachment: "platform", residentKey: "required", userVerification: "required" },
+      attestation: "none",
+      extensions: { prf: { eval: { first: salt } } }
+    } }).then(function (cred) {
+      var r = cred.getClientExtensionResults() || {};
+      if (!r.prf || r.prf.enabled === false) { decline(); throw err("noprf"); }
+      var prf = prfOf(cred);
+      if (prf) return seal(prf, pw, cred.rawId, salt);
+      // Some phones only hand the key over on a sign in, so do one straight away. Safari
+      // wants a fresh tap for that, which the page asks for if this is refused.
+      pending = { id: cred.rawId, salt: salt, pw: pw };
+      return finish();
+    });
+  }
+  function finish() {
+    if (!pending) return Promise.reject(err("nothing"));
+    var p = pending;
+    return ask(p.id, p.salt).then(function (cred) {
+      var prf = prfOf(cred);
+      if (!prf) { decline(); throw err("noprf"); }
+      return seal(prf, p.pw, p.id, p.salt);
+    });
+  }
+  /* Every time after: the passkey unlocks the password. */
+  function unlock() {
+    var s = read(); if (!s) return Promise.reject(err("none"));
+    return ask(unb64(s.id), unb64(s.salt)).then(function (cred) {
+      var prf = prfOf(cred); if (!prf) throw err("noprf");
+      return keyFrom(prf).then(function (k) { return crypto.subtle.decrypt({ name: "AES-GCM", iv: unb64(s.iv) }, k, unb64(s.ct)); })
+        .then(function (pt) { return dec.decode(pt); }, function () { throw err("broken"); });
+    });
+  }
+  /* Sort a failure into something the page can act on. */
+  function why(e, tapped) {
+    var c = e && (e.code || e.name) || "";
+    if (c === "NotAllowedError" || c === "AbortError" || c === "TimeoutError") return tapped ? "cancel" : "notap";
+    if (c === "cancel" || c === "notap" || c === "noprf" || c === "broken" || c === "none" || c === "nothing") return c;
+    if (c === "InvalidStateError") return "cancel";
+    return "unsupported";
+  }
+  return { setup: function (c) { cfg = c; }, ok: ok, ready: ready, canOffer: canOffer, enrol: enrol, finish: finish, unlock: unlock,
+    forget: forget, decline: decline, cancel: cancel, needsTap: function () { return !!pending; }, bio: bio, device: device, why: why };
+})();
+</script>
 <script>
 // Never run inside another site's page. These pages are opened directly, so a frame can only
 // mean another site is wrapping them to get at the data. Stops before anything is read.
@@ -696,64 +844,163 @@ function baseName(full){
   return i<0 ? s : s.slice(0,i).trim();
 }
 
-/* ---------- unlock ---------- */
+/* ---------- sign in ----------
+   With Face ID set up on this phone it is asked for the moment the page opens, and the page
+   signs itself in. If that fails, or Face ID is cancelled, the Sign in button and Use password
+   come up. The password goes to the script once and an 8 hour pass comes back; once the
+   password has worked on a phone that can do Face ID, the page offers to switch. The passkey
+   is the same one the dashboard uses, so setting it up on either page covers both. */
+var G={mode:"pw",held:"",keep:null,was:false,busy:false,autoT:null};
+var FACE_SVG='<path d="M4 8.5V6.5A2.5 2.5 0 0 1 6.5 4h2M15.5 4h2A2.5 2.5 0 0 1 20 6.5v2M20 15.5v2a2.5 2.5 0 0 1-2.5 2.5h-2M8.5 20h-2A2.5 2.5 0 0 1 4 17.5v-2"/><path d="M9 9.3v1.4M15 9.3v1.4M8.7 14.2c.8 1.1 2 1.7 3.3 1.7s2.5-.6 3.3-1.7"/>';
+var PRINT_SVG='<path d="M6 8.2A6.8 6.8 0 0 1 18.8 11c0 2.6-.3 5.1-1 7.4"/><path d="M8.4 9.6A4.3 4.3 0 0 1 16.3 11c0 3.4-.5 6.3-1.5 8.8"/><path d="M10.6 11.1a1.4 1.4 0 0 1 2.8 0c0 3.6-.7 6.7-2 9.4"/><path d="M12 13.9c0 2.4-.5 4.6-1.5 6.8"/><path d="M5.4 11c0 2.6-.2 4.9-.8 7"/>';
+function loginMsg(e){
+  return e==="wrong_password"?"That password isn't right.":e==="locked"?"Too many tries. Wait 10 minutes, then try again.":
+    e==="no_password"?"Sign in isn't set up yet.":e==="net"?"No connection. Check it and try again.":"Couldn't sign in. Try again.";
+}
+function showLockErr(m,good){ var e=$("lockErr"); e.textContent=m||""; e.className="err"+(good?" good":""); e.style.display=m?"block":"none"; }
+function gMode(m){
+  G.mode=m; var l=$("lock"); if(!l) return;
+  l.setAttribute("data-mode",m);
+  var bio=PK.bio();
+  $("lockTitle").textContent=m==="offer"?"Use "+bio+" next time?":m==="finish"?"One more step":"Orders";
+  $("lockSub").textContent=m==="offer"?"No password to type. Just look at your phone.":m==="finish"?"Confirm with "+bio+" once to finish setting it up.":
+    (m==="auto"||m==="face")?"":"Sign in with the dashboard password.";
+  if(m==="pw" && window.matchMedia && matchMedia("(hover:hover) and (pointer:fine)").matches) setTimeout(function(){ var k=$("kIn"); if(k&&G.mode==="pw") k.focus(); },60);
+}
+function gBusy(on,id,txt){
+  G.busy=on; var l=$("lock"); if(l) l.classList.toggle("busy",on);
+  var b=id&&$(id), sp=b&&(b.querySelector("span")||b);
+  if(sp){ if(on){ sp.dataset.was=sp.textContent; sp.textContent=txt; } else if(sp.dataset.was){ sp.textContent=sp.dataset.was; delete sp.dataset.was; } }
+}
+function gateShow(msg,quiet){
+  G.was=PK.ready(); G.held=""; G.keep=null; G.busy=false; clearTimeout(G.autoT);
+  var apple=/iPhone|iPad|Mac/.test(PK.device()), glyph=apple?FACE_SVG:PRINT_SVG, bio=PK.bio();
+  var svgs=$("lock").querySelectorAll(".cta svg"); for(var i=0;i<svgs.length;i++) svgs[i].innerHTML=glyph;
+  $("faceBtn").querySelector("span").textContent="Sign in with "+bio;
+  $("faceBack").textContent="Use "+bio; $("faceBack").hidden=!G.was;
+  $("lock").classList.remove("hide","busy"); $("app").classList.add("hide"); $("bar").classList.add("hide");
+  showLockErr(msg||"");
+  var ki=$("kIn"); if(ki) ki.value="";
+  if(G.was){ if(quiet) gMode("face"); else gAuto(); }
+  else gMode("pw");
+}
+/* Nothing on screen but the name while the phone asks for Face ID by itself. If that comes to
+   nothing, the button appears so it can be asked for again. Use password is always there. */
+function gAuto(){
+  gMode("auto"); G.busy=false;
+  clearTimeout(G.autoT); G.autoT=setTimeout(function(){ if(G.mode==="auto") gMode("face"); },6000);
+  gFace(false);
+}
+function enter(j){
+  KEY=j.pass;
+  var ok=lsSet("peps-script-key",KEY) && lsSet("peps-script-exp",String(j.exp||0));
+  G.held=""; G.keep=null; clearTimeout(G.autoT);
+  var ki=$("kIn"); if(ki) ki.value=""; showLockErr("");
+  if(!ok) bannerWarn("Signed in for this visit only. This browser is not saving your login, so you will have to type it again next time.");
+  armOut(+j.exp||0); start();
+}
+function login(pw){
+  URL_=HUB_URL;
+  return fetch(URL_, {method:"POST", redirect:"follow", headers:{"Content-Type":"text/plain;charset=utf-8"}, body: JSON.stringify({action:"login", pw:pw})})
+    .then(function(r){ return r.json(); });
+}
 (function initLock(){
   var savedKey = lsGet("peps-script-key") || "", savedExp = Number(lsGet("peps-script-exp") || 0);
   URL_ = HUB_URL; $("uIn").value = "PPR dashboard";
-  if(savedKey && (!savedExp || savedExp > Date.now())){ KEY=savedKey; armOut(savedExp); start(); }
+  PK.setup({store:"peps.pk",name:"PEPS Hub",since:Date.UTC(2026,9,26)});
   $("lockForm").addEventListener("submit", function(e){ e.preventDefault(); doUnlock(); });
+  $("faceBtn").addEventListener("click", function(){ gFace(true); });
+  $("facePw").addEventListener("click", function(){ PK.cancel(); clearTimeout(G.autoT); gBusy(false,"faceBtn"); gMode("pw"); showLockErr(""); });
+  $("faceBack").addEventListener("click", function(){ gMode("face"); gFace(true); });
+  $("offerOn").addEventListener("click", gOfferOn); $("offerNo").addEventListener("click", gSkip);
+  $("finishBtn").addEventListener("click", gFinish); $("finishNo").addEventListener("click", gSkip);
   if(!storageOK()){
     showStoreWarn("This browser will not remember your login.<br>You are either in a private tab, or cookies and site data are switched off for this site. Fix that and it will stick.");
   }else{
     var hint=$("saveHint"); if(hint) hint.style.display="inline";
   }
+  if(savedKey && (!savedExp || savedExp > Date.now())){ KEY=savedKey; armOut(savedExp); start(); }
+  else gateShow("");
 })();
 
-/* Sign in: the password goes to the script once, and an 8 hour pass comes back. */
 function pwToggle(){ var k=$("kIn"), e=$("pwEye"); if(!k||!e) return; var show=k.type==="password"; k.type=show?"text":"password"; e.textContent=show?"Hide":"Show"; }
+/* The password typed in. */
 function doUnlock(){
-  var pw=$("kIn").value, btn=$("unlockBtn");
+  if(G.busy) return;
+  var pw=$("kIn").value;
   if(!pw){ showLockErr("Enter the password."); $("kIn").focus(); return; }
-  URL_=HUB_URL; btn.disabled=true; btn.textContent="Signing in"; var le0=$("lockErr"); if(le0) le0.style.display="none";
-  fetch(URL_, {method:"POST", redirect:"follow", headers:{"Content-Type":"text/plain;charset=utf-8"}, body: JSON.stringify({action:"login", pw:pw})})
-  .then(function(r){ return r.json(); })
-  .then(function(j){
+  PK.cancel(); showLockErr(""); gBusy(true,"unlockBtn","Signing in");
+  login(pw).then(function(j){
     if(j && j.ok && j.pass){
-      KEY=j.pass;
-      var ok=lsSet("peps-script-key",KEY) && lsSet("peps-script-exp",String(j.exp||0));
       if(window.__credStore) window.__credStore(URL_,pw);
-      $("kIn").value=""; var le=$("lockErr"); if(le) le.style.display="none";
-      if(!ok) bannerWarn("Signed in for this visit only. This browser is not saving your login, so you will have to type it again next time.");
-      armOut(+j.exp||0); start(); return;
+      $("kIn").value="";
+      return gAfter(pw,j);
     }
-    var e=j && j.error;
-    showLockErr(e==="wrong_password"?"That password isn't right.":e==="locked"?"Too many tries. Wait 10 minutes, then try again.":e==="no_password"?"Sign in isn't set up yet.":"Couldn't sign in. Try again.");
+    showLockErr(loginMsg(j && j.error));
   })
-  .catch(function(){ showLockErr("No connection. Check it and try again."); })
-  .finally(function(){ btn.disabled=false; btn.textContent="Sign in"; });
+  .catch(function(){ showLockErr(loginMsg("net")); })
+  .finally(function(){ gBusy(false,"unlockBtn"); });
 }
+/* In with the password: offer the switch to Face ID, unless this device already has it or can't. */
+function gAfter(pw,j){
+  return PK.canOffer(false).then(function(can){
+    if(can){ G.held=pw; G.keep=j; gMode("offer"); showLockErr(""); }
+    else enter(j);
+  });
+}
+/* Face ID unlocks the password, which signs in like normal. */
+function gFace(tapped){
+  if(G.busy) return;
+  showLockErr(""); gBusy(true,"faceBtn","Signing in");
+  PK.unlock().then(function(pw){
+    return login(pw).then(function(j){
+      if(j && j.ok && j.pass) return enter(j);
+      if(j && j.error==="wrong_password"){ PK.forget(); G.was=false; $("faceBack").hidden=true; gMode("pw"); showLockErr("The password has changed. Type it once."); return; }
+      if(G.mode==="auto") gMode("face");
+      showLockErr(loginMsg(j && j.error));
+    }, function(){ if(G.mode==="auto") gMode("face"); showLockErr(loginMsg("net")); });
+  }).catch(function(e){
+    var w=PK.why(e,tapped);
+    if(G.mode==="pw") return;                        // Use password was tapped while it waited
+    if(w==="cancel" || w==="notap"){ if(G.mode==="auto") gMode("face"); return; }
+    PK.forget(); G.was=false; $("faceBack").hidden=true; gMode("pw");
+  }).then(function(){ clearTimeout(G.autoT); if(G.mode!=="pw") gBusy(false,"faceBtn"); else G.busy=false; });
+}
+function gOfferOn(){
+  if(G.busy || !G.held) return;
+  showLockErr(""); gBusy(true,"offerOn","Setting up");
+  PK.enrol(G.held).then(function(){ gDone(true); }).catch(function(e){
+    if(PK.needsTap()){ gMode("finish"); return; }
+    if(PK.why(e,true)==="cancel") PK.decline();
+    gDone(false);
+  }).then(function(){ gBusy(false,"offerOn"); });
+}
+function gFinish(){
+  if(G.busy) return;
+  showLockErr(""); gBusy(true,"finishBtn","Finishing");
+  PK.finish().then(function(){ gDone(true); }).catch(function(e){
+    if(PK.why(e,true)==="cancel") showLockErr("Didn't finish. Tap Finish to try again.");
+    else gDone(false);
+  }).then(function(){ gBusy(false,"finishBtn"); });
+}
+function gDone(on){ var j=G.keep; if(on) toast(PK.bio()+" is on","ok"); if(j) enter(j); }
+function gSkip(){ PK.decline(); var j=G.keep; if(j) enter(j); }
 // Signs out when the 8 hours are up, even with the page left open.
 function armOut(exp){
   clearTimeout(OUT_T);
-  if(exp) OUT_T=setTimeout(function(){ lockUp(); showLockErr("Signed out after 8 hours. Sign in again."); }, Math.min(Math.max(0,exp-Date.now())+500, 2147000000));
+  if(exp) OUT_T=setTimeout(function(){ lockUp(); showLockErr("Signed out after 8 hours."); }, Math.min(Math.max(0,exp-Date.now())+500, 2147000000));
 }
 document.addEventListener("visibilitychange", function(){
   var e=Number(lsGet("peps-script-exp")||0);
-  if(!document.hidden && KEY && e && e<Date.now()){ lockUp(); showLockErr("Signed out after 8 hours. Sign in again."); }
+  if(!document.hidden && KEY && e && e<Date.now()){ lockUp(); showLockErr("Signed out after 8 hours."); }
 });
-function showLockErr(m){ var e=$("lockErr"); e.textContent=m; e.style.display="block"; }
-
-function lockUp(){
+/* Signed out: by hand it waits for a tap, after 8 hours it asks for Face ID straight away. */
+function lockUp(ev){
   try{ localStorage.removeItem("peps-script-key"); localStorage.removeItem("peps-script-exp"); }catch(e){}
   clearTimeout(OUT_T); KEY=""; DATA=null;
-  var ki=$("kIn"); if(ki) ki.value="";
-  $("app").classList.add("hide");
-  $("bar").classList.add("hide");
-  $("lock").classList.remove("hide");
-  $("lockErr").style.display="none";
+  gateShow("", !!ev);
 }
 
-/* ---------- load ---------- */
 function start(){
   $("lock").classList.add("hide");
   $("app").classList.remove("hide");
@@ -1464,7 +1711,7 @@ $("addrNew").addEventListener("input", addrSync);
 $("addrSave").addEventListener("click", addrSave);
 document.addEventListener("keydown", function(e){ if(e.key==="Escape" && !$("addrMask").classList.contains("hide")) addrClose(); });
 
-$("lockBtn").addEventListener("click", lockUp);
+$("lockBtn").addEventListener("click", function(){ lockUp(true); });
 window.addEventListener("beforeunload", function(e){
   if(validLines().length && customerName()){ e.preventDefault(); e.returnValue=""; }
 });
